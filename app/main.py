@@ -3,7 +3,6 @@
 
 import hashlib
 import ipaddress
-import os
 import secrets
 import sqlite3
 import threading
@@ -13,7 +12,6 @@ import unicodedata
 from collections import defaultdict, deque
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-from pathlib import Path
 from urllib.parse import urlsplit
 
 from fastapi import FastAPI, Header, HTTPException, Request, status
@@ -38,47 +36,17 @@ from app.schemas import (
 )
 
 
-DATABASE_PATH = Path(
-    os.getenv("DATABASE_PATH", "/app/data/wichtel.db")
+from app.config import (
+    DATABASE_PATH,
+    MAX_ACTIVE_DEVICES_PER_USER,
+    MAX_GROUP_MEMBERS,
+    MAX_OPEN_GROUPS_PER_OWNER,
+    MAX_WISHLIST_ITEMS_PER_USER_GROUP,
+    RATE_LIMIT_ENABLED,
+    RATE_LIMIT_RULES,
+    TRUSTED_PROXY_NETWORKS,
 )
 
-MAX_ACTIVE_DEVICES_PER_USER = 10
-MAX_OPEN_GROUPS_PER_OWNER = 25
-MAX_GROUP_MEMBERS = 50
-MAX_WISHLIST_ITEMS_PER_USER_GROUP = 30
-
-RATE_LIMIT_ENABLED = (
-    os.getenv(
-        "RATE_LIMIT_ENABLED",
-        "true",
-    ).strip().lower()
-    not in {
-        "0",
-        "false",
-        "no",
-        "off",
-    }
-)
-
-TRUSTED_PROXY_NETWORKS = tuple(
-    ipaddress.ip_network(
-        value.strip(),
-        strict=False,
-    )
-    for value in os.getenv(
-        "TRUSTED_PROXY_NETWORKS",
-        "",
-    ).split(",")
-    if value.strip()
-)
-
-RATE_LIMIT_RULES = {
-    "register_ip": (5, 3600),
-    "recover_ip": (20, 900),
-    "recover_account": (8, 900),
-    "join_ip": (30, 900),
-    "join_user": (10, 900),
-}
 
 _rate_limit_buckets = defaultdict(deque)
 _rate_limit_lock = threading.Lock()

@@ -21,6 +21,7 @@ def api(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
     for module_name in [
         "app.main",
+        "app.config",
         "app",
     ]:
         sys.modules.pop(module_name, None)
