@@ -1,12 +1,10 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Michael Gsell
 
-import hashlib
 import secrets
 import sqlite3
 import uuid
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
 
 from fastapi import FastAPI, Header, HTTPException, Request, status
 
@@ -21,7 +19,13 @@ from app.database import (
     initialise_database,
     open_database,
 )
-from app.identifiers import create_account_code
+from app.identifiers import (
+    create_account_code,
+    create_invite_code,
+    create_recovery_key,
+)
+from app.security import hash_secret
+from app.time_utils import utc_now
 from app.rate_limit import (
     check_rate_limit,
     get_client_ip,
@@ -49,28 +53,6 @@ from app.schemas import (
     UpdateWishlistItemRequest,
     WishlistItemResponse,
 )
-
-
-def utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat()
-
-
-def hash_secret(value: str) -> str:
-    return hashlib.sha256(value.encode("utf-8")).hexdigest()
-
-
-def create_recovery_key() -> str:
-    raw = secrets.token_hex(8).upper()
-
-    return (
-        f"WICHTEL-{raw[0:4]}-{raw[4:8]}-"
-        f"{raw[8:12]}-{raw[12:16]}"
-    )
-
-
-def create_invite_code() -> str:
-    alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-    return "".join(secrets.choice(alphabet) for _ in range(6))
 
 
 def get_authenticated_user_id(
