@@ -851,3 +851,59 @@ def test_unsafe_wishlist_link_returns_machine_readable_error(api):
             "message": "Links must start with http:// or https://.",
         }
     }
+
+
+def test_rate_limit_returns_machine_readable_error(
+    tmp_path,
+    monkeypatch,
+):
+    database_path = tmp_path / "wichtel-rate-limit-test.db"
+
+    monkeypatch.setenv(
+        "DATABASE_PATH",
+        str(database_path),
+    )
+    monkeypatch.setenv(
+        "RATE_LIMIT_ENABLED",
+        "true",
+    )
+
+    import importlib
+    import sys
+
+    for module_name in [
+        "app.main",
+        "app.routers.users",
+        "app.rate_limit",
+        "app.database",
+        "app.config",
+        "app.errors",
+        "app",
+    ]:
+        sys.modules.pop(module_name, None)
+
+    main = importlib.import_module("app.main")
+
+    from fastapi.testclient import TestClient
+
+    with TestClient(main.app) as client:
+        responses = [
+            client.post(
+                "/api/users/register",
+                json={
+                    "display_name": f"Rate Limit {index}",
+                },
+            )
+            for index in range(6)
+        ]
+
+    response = responses[-1]
+
+    assert response.status_code == 429
+    assert response.headers["Retry-After"]
+    assert response.json() == {
+        "detail": {
+            "code": "rate_limit_exceeded",
+            "message": "Too many requests. Please try again later.",
+        }
+    }

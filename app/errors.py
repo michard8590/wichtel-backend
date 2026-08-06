@@ -20,6 +20,7 @@ class ErrorCode(StrEnum):
     NAME_REQUIRES_ALPHANUMERIC_CHARACTER = "name_requires_alphanumeric_character"
     INVALID_LINK = "invalid_link"
     UNSUPPORTED_LINK_SCHEME = "unsupported_link_scheme"
+    RATE_LIMIT_EXCEEDED = "rate_limit_exceeded"
 
 
 def api_error(
