@@ -3,7 +3,6 @@
 
 import hashlib
 
-
 __all__ = [
     "hash_secret",
 ]

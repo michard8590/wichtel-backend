@@ -5,7 +5,6 @@ import ipaddress
 import os
 from pathlib import Path
 
-
 DATABASE_PATH = Path(
     os.getenv(
         "DATABASE_PATH",
@@ -18,18 +17,15 @@ MAX_OPEN_GROUPS_PER_OWNER = 25
 MAX_GROUP_MEMBERS = 50
 MAX_WISHLIST_ITEMS_PER_USER_GROUP = 30
 
-RATE_LIMIT_ENABLED = (
-    os.getenv(
-        "RATE_LIMIT_ENABLED",
-        "true",
-    ).strip().lower()
-    not in {
-        "0",
-        "false",
-        "no",
-        "off",
-    }
-)
+RATE_LIMIT_ENABLED = os.getenv(
+    "RATE_LIMIT_ENABLED",
+    "true",
+).strip().lower() not in {
+    "0",
+    "false",
+    "no",
+    "off",
+}
 
 TRUSTED_PROXY_NETWORKS = tuple(
     ipaddress.ip_network(

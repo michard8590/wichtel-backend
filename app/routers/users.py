@@ -39,7 +39,6 @@ from app.security import hash_secret
 from app.time_utils import utc_now
 from app.validation import validate_display_name
 
-
 router = APIRouter()
 
 
@@ -57,9 +56,7 @@ def register_user(
         get_client_ip(http_request),
     )
 
-    display_name = validate_display_name(
-        request.display_name
-    )
+    display_name = validate_display_name(request.display_name)
 
     user_id = str(uuid.uuid4())
     device_id = str(uuid.uuid4())
@@ -85,7 +82,7 @@ def register_user(
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Es konnte kein Account-Code erzeugt werden.",
+                detail="An account code could not be generated.",
             )
 
     try:
@@ -139,14 +136,14 @@ def register_user(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=(
-                'The profile could not be created because of a unique data conflict.'
+                "The profile could not be created because of a unique data conflict."
             ),
         ) from exception
 
     except sqlite3.Error as exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail='The user account could not be created.',
+            detail="The user account could not be created.",
         ) from exception
 
     return RegisterResponse(
@@ -167,16 +164,8 @@ def recover_user(
     request: RecoverRequest,
     http_request: Request,
 ) -> RecoverResponse:
-    account_code = (
-        request.account_code
-        .strip()
-        .upper()
-    )
-    recovery_key = (
-        request.recovery_key
-        .strip()
-        .upper()
-    )
+    account_code = request.account_code.strip().upper()
+    recovery_key = request.recovery_key.strip().upper()
 
     check_rate_limit(
         "recover_ip",
@@ -204,22 +193,17 @@ def recover_user(
             (account_code,),
         ).fetchone()
 
-        supplied_recovery_hash = hash_secret(
-            recovery_key
-        )
+        supplied_recovery_hash = hash_secret(recovery_key)
 
         if user is None:
             secrets.compare_digest(
-                hash_secret(
-                    "INVALID-RECOVERY-KEY"
-                ),
+                hash_secret("INVALID-RECOVERY-KEY"),
                 supplied_recovery_hash,
             )
 
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=(
-                    'The account code or recovery key is invalid.'               ),
+                detail=("The account code or recovery key is invalid."),
             )
 
         (
@@ -235,14 +219,10 @@ def recover_user(
             supplied_recovery_hash,
         )
 
-        if (
-            not recovery_matches
-            or bool(is_deleted_value)
-        ):
+        if not recovery_matches or bool(is_deleted_value):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=(
-                    'The account code or recovery key is invalid.'               ),
+                detail=("The account code or recovery key is invalid."),
             )
 
         active_device_count = connection.execute(
@@ -255,14 +235,12 @@ def recover_user(
             (user_id,),
         ).fetchone()[0]
 
-        if (
-            active_device_count
-            >= MAX_ACTIVE_DEVICES_PER_USER
-        ):
+        if active_device_count >= MAX_ACTIVE_DEVICES_PER_USER:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=(
-                    'Too many active devices are already registered for this profile.'                ),
+                    "Too many active devices are already registered for this profile."
+                ),
             )
 
         device_id = str(uuid.uuid4())
@@ -296,7 +274,7 @@ def recover_user(
         except sqlite3.Error as exception:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail='The profile could not be recovered.',
+                detail="The profile could not be recovered.",
             ) from exception
 
     return RecoverResponse(
@@ -315,22 +293,14 @@ def update_own_profile(
     request: UpdateProfileRequest,
     authorization: str | None = Header(default=None),
 ) -> ProfileResponse:
-    user_id = get_authenticated_user_id(
-        authorization
-    )
+    user_id = get_authenticated_user_id(authorization)
 
-    display_name = validate_display_name(
-        request.display_name
-    )
+    display_name = validate_display_name(request.display_name)
 
     with open_database() as connection:
-        connection.execute(
-            "PRAGMA foreign_keys = ON"
-        )
+        connection.execute("PRAGMA foreign_keys = ON")
 
-        connection.execute(
-            "BEGIN IMMEDIATE"
-        )
+        connection.execute("BEGIN IMMEDIATE")
 
         try:
             user = connection.execute(
@@ -346,11 +316,8 @@ def update_own_profile(
 
             if user is None:
                 raise HTTPException(
-                    status_code=
-                        status.HTTP_404_NOT_FOUND,
-                    detail=(
-                        'The profile was not found.'
-                    ),
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=("The profile was not found."),
                 )
 
             (
@@ -361,8 +328,7 @@ def update_own_profile(
             if bool(is_deleted_value):
                 raise HTTPException(
                     status_code=status.HTTP_410_GONE,
-                    detail=(
-                        'The profile has already been deleted.'                    ),
+                    detail=("The profile has already been deleted."),
                 )
 
             connection.execute(
@@ -387,11 +353,8 @@ def update_own_profile(
             connection.rollback()
 
             raise HTTPException(
-                status_code=
-                    status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=(
-                    'The profile could not be updated.'
-                ),
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=("The profile could not be updated."),
             ) from exception
 
     return ProfileResponse(
@@ -408,36 +371,22 @@ def update_own_profile(
 def delete_own_account(
     authorization: str | None = Header(default=None),
 ) -> None:
-    user_id = get_authenticated_user_id(
-        authorization
-    )
+    user_id = get_authenticated_user_id(authorization)
 
     deleted_at = utc_now()
 
-    anonymous_name = (
-        'Deleted user '        + secrets.token_hex(2).upper()
-    )
+    anonymous_name = "Deleted user " + secrets.token_hex(2).upper()
 
-    # Technisch eindeutiger interner Wert.
+    # Technically unique internal value.
     # This value is no longer returned to the app.
-    anonymous_account_code = (
-        "DEL-"
-        + secrets.token_hex(8).upper()
-    )
+    anonymous_account_code = "DEL-" + secrets.token_hex(8).upper()
 
-    invalid_recovery_hash = hash_secret(
-        "DELETED-"
-        + secrets.token_urlsafe(48)
-    )
+    invalid_recovery_hash = hash_secret("DELETED-" + secrets.token_urlsafe(48))
 
     with open_database() as connection:
-        connection.execute(
-            "PRAGMA foreign_keys = ON"
-        )
+        connection.execute("PRAGMA foreign_keys = ON")
 
-        connection.execute(
-            "BEGIN IMMEDIATE"
-        )
+        connection.execute("BEGIN IMMEDIATE")
 
         try:
             user = connection.execute(
@@ -451,23 +400,19 @@ def delete_own_account(
 
             if user is None:
                 raise HTTPException(
-                    status_code=
-                        status.HTTP_404_NOT_FOUND,
-                    detail=(
-                        'The account was not found.'
-                    ),
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=("The account was not found."),
                 )
 
             if bool(user[0]):
                 raise HTTPException(
                     status_code=status.HTTP_410_GONE,
-                    detail=(
-                        'The account has already been deleted.'                    ),
+                    detail=("The account has already been deleted."),
                 )
 
             # Delete the user's open groups.
             # Related memberships, wishlist items, and assignments
-            # werden durch ON DELETE CASCADE entfernt.
+            # are removed through ON DELETE CASCADE.
             connection.execute(
                 """
                 DELETE FROM groups
@@ -515,7 +460,7 @@ def delete_own_account(
             )
 
             # In drawn groups, the user remains as
-            # anonymisierter Platzhalter bestehen.
+            # an anonymised placeholder.
             connection.execute(
                 """
                 UPDATE users
@@ -536,9 +481,7 @@ def delete_own_account(
                 ),
             )
 
-            delete_groups_without_active_members(
-                connection
-            )
+            delete_groups_without_active_members(connection)
 
             connection.commit()
 
@@ -550,18 +493,16 @@ def delete_own_account(
             connection.rollback()
 
             raise HTTPException(
-                status_code=
-                    status.HTTP_409_CONFLICT,
+                status_code=status.HTTP_409_CONFLICT,
                 detail=(
-                    'The account could not be deleted because related data still exists.'                ),
+                    "The account could not be deleted because related data still exists."
+                ),
             ) from exception
 
         except sqlite3.Error as exception:
             connection.rollback()
 
             raise HTTPException(
-                status_code=
-                    status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=(
-                    'The account could not be deleted.'                ),
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=("The account could not be deleted."),
             ) from exception

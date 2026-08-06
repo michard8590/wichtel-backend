@@ -36,7 +36,6 @@ from app.schemas import (
 )
 from app.time_utils import utc_now
 
-
 router = APIRouter()
 
 
@@ -119,7 +118,7 @@ def create_group(
     if len(group_name) < 2:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail='The group name must contain at least two characters.',
+            detail="The group name must contain at least two characters.",
         )
 
     group_id = str(uuid.uuid4())
@@ -138,15 +137,10 @@ def create_group(
             (owner_user_id,),
         ).fetchone()[0]
 
-        if (
-            open_group_count
-            >= MAX_OPEN_GROUPS_PER_OWNER
-        ):
+        if open_group_count >= MAX_OPEN_GROUPS_PER_OWNER:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=(
-                    'You have already created the maximum number of open groups.'
-                ),
+                detail=("You have already created the maximum number of open groups."),
             )
         connection.execute("PRAGMA foreign_keys = ON")
 
@@ -203,7 +197,7 @@ def create_group(
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Es konnte kein Einladungscode erzeugt werden.",
+                detail="An invite code could not be generated.",
             )
 
     return GroupResponse(
@@ -233,9 +227,7 @@ def update_group(
     if len(group_name) < 2:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=(
-                'The group name must contain at least two characters.'
-            ),
+            detail=("The group name must contain at least two characters."),
         )
 
     with open_database() as connection:
@@ -260,7 +252,7 @@ def update_group(
             if group is None:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail='The group was not found.',
+                    detail="The group was not found.",
                 )
 
             (
@@ -274,17 +266,13 @@ def update_group(
             if owner_user_id != user_id:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail=(
-                        'Only the group owner may update this group.'
-                    ),
+                    detail=("Only the group owner may update this group."),
                 )
 
             if group_status != "OPEN":
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail=(
-                        'The group cannot be updated after the draw.'
-                    ),
+                    detail=("The group cannot be updated after the draw."),
                 )
 
             connection.execute(
@@ -324,9 +312,7 @@ def update_group(
 
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=(
-                    'The group could not be updated.'
-                ),
+                detail=("The group could not be updated."),
             ) from exception
 
     return GroupResponse(
@@ -370,7 +356,7 @@ def leave_group(
             if group is None:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail='The group was not found.',
+                    detail="The group was not found.",
                 )
 
             owner_user_id, group_status = group
@@ -379,15 +365,14 @@ def leave_group(
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail=(
-                        'The group owner cannot leave the group and must delete it instead.'                    ),
+                        "The group owner cannot leave the group and must delete it instead."
+                    ),
                 )
 
             if group_status != "OPEN":
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail=(
-                        'The group cannot be left after the draw.'
-                    ),
+                    detail=("The group cannot be left after the draw."),
                 )
 
             membership = connection.execute(
@@ -406,9 +391,7 @@ def leave_group(
             if membership is None:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=(
-                        'You are not a member of this group.'
-                    ),
+                    detail=("You are not a member of this group."),
                 )
 
             connection.execute(
@@ -435,9 +418,7 @@ def leave_group(
                 ),
             )
 
-            delete_groups_without_active_members(
-                connection
-            )
+            delete_groups_without_active_members(connection)
 
             connection.commit()
 
@@ -450,9 +431,7 @@ def leave_group(
 
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=(
-                    'The group could not be left.'
-                ),
+                detail=("The group could not be left."),
             ) from exception
 
 
@@ -486,7 +465,7 @@ def remove_group_member(
             if group is None:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail='The group was not found.',
+                    detail="The group was not found.",
                 )
 
             owner_user_id, group_status = group
@@ -494,25 +473,19 @@ def remove_group_member(
             if owner_user_id != user_id:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail=(
-                        'Only the group owner may remove members.'
-                    ),
+                    detail=("Only the group owner may remove members."),
                 )
 
             if group_status != "OPEN":
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail=(
-                        'Members cannot be removed after the draw.'
-                    ),
+                    detail=("Members cannot be removed after the draw."),
                 )
 
             if member_user_id == owner_user_id:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail=(
-                        'The group owner cannot be removed from their own group.'
-                    ),
+                    detail=("The group owner cannot be removed from their own group."),
                 )
 
             membership = connection.execute(
@@ -531,9 +504,7 @@ def remove_group_member(
             if membership is None:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=(
-                        'The member was not found in this group.'
-                    ),
+                    detail=("The member was not found in this group."),
                 )
 
             connection.execute(
@@ -560,9 +531,7 @@ def remove_group_member(
                 ),
             )
 
-            delete_groups_without_active_members(
-                connection
-            )
+            delete_groups_without_active_members(connection)
 
             connection.commit()
 
@@ -575,9 +544,7 @@ def remove_group_member(
 
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=(
-                    'The member could not be removed.'
-                ),
+                detail=("The member could not be removed."),
             ) from exception
 
 
@@ -589,18 +556,12 @@ def delete_group(
     group_id: str,
     authorization: str | None = Header(default=None),
 ) -> None:
-    user_id = get_authenticated_user_id(
-        authorization
-    )
+    user_id = get_authenticated_user_id(authorization)
 
     with open_database() as connection:
-        connection.execute(
-            "PRAGMA foreign_keys = ON"
-        )
+        connection.execute("PRAGMA foreign_keys = ON")
 
-        connection.execute(
-            "BEGIN IMMEDIATE"
-        )
+        connection.execute("BEGIN IMMEDIATE")
 
         try:
             group = connection.execute(
@@ -622,11 +583,8 @@ def delete_group(
 
             if group is None:
                 raise HTTPException(
-                    status_code=
-                        status.HTTP_404_NOT_FOUND,
-                    detail=(
-                        'The group was not found.'
-                    ),
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=("The group was not found."),
                 )
 
             (
@@ -634,9 +592,7 @@ def delete_group(
                 owner_deleted_value,
             ) = group
 
-            owner_deleted = bool(
-                owner_deleted_value
-            )
+            owner_deleted = bool(owner_deleted_value)
 
             membership = connection.execute(
                 """
@@ -657,20 +613,14 @@ def delete_group(
                 ),
             ).fetchone()
 
-            user_may_delete = (
-                owner_user_id == user_id
-                or (
-                    owner_deleted
-                    and membership is not None
-                )
+            user_may_delete = owner_user_id == user_id or (
+                owner_deleted and membership is not None
             )
 
             if not user_may_delete:
                 raise HTTPException(
-                    status_code=
-                        status.HTTP_403_FORBIDDEN,
-                    detail=(
-                        'You are not allowed to delete this group.'                    ),
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=("You are not allowed to delete this group."),
                 )
 
             connection.execute(
@@ -691,10 +641,8 @@ def delete_group(
             connection.rollback()
 
             raise HTTPException(
-                status_code=
-                    status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=(
-                    'The group could not be deleted.'                ),
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=("The group could not be deleted."),
             ) from exception
 
 
@@ -706,9 +654,7 @@ def get_group_detail(
     group_id: str,
     authorization: str | None = Header(default=None),
 ) -> GroupDetailResponse:
-    user_id = get_authenticated_user_id(
-        authorization
-    )
+    user_id = get_authenticated_user_id(authorization)
 
     with open_database() as connection:
         group = connection.execute(
@@ -741,9 +687,7 @@ def get_group_detail(
         if group is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=(
-                    'The group was not found or you are not a member.'
-                ),
+                detail=("The group was not found or you are not a member."),
             )
 
         (
@@ -759,9 +703,7 @@ def get_group_detail(
             created_at,
         ) = group
 
-        owner_deleted = bool(
-            owner_deleted_value
-        )
+        owner_deleted = bool(owner_deleted_value)
 
         member_rows = connection.execute(
             """
@@ -799,10 +741,7 @@ def get_group_detail(
             user_id=member_user_id,
             display_name=display_name,
             account_code=account_code or "",
-            is_owner=(
-                member_user_id
-                == owner_user_id
-            ),
+            is_owner=(member_user_id == owner_user_id),
         )
         for (
             member_user_id,
@@ -811,15 +750,9 @@ def get_group_detail(
         ) in member_rows
     ]
 
-    is_owner = (
-        user_id == owner_user_id
-        and not owner_deleted
-    )
+    is_owner = user_id == owner_user_id and not owner_deleted
 
-    can_delete_group = (
-        is_owner
-        or owner_deleted
-    )
+    can_delete_group = is_owner or owner_deleted
 
     return GroupDetailResponse(
         id=stored_group_id,
@@ -848,14 +781,8 @@ def join_group(
     http_request: Request,
     authorization: str | None = Header(default=None),
 ) -> GroupResponse:
-    user_id = get_authenticated_user_id(
-        authorization
-    )
-    invite_code = (
-        request.invite_code
-        .strip()
-        .upper()
-    )
+    user_id = get_authenticated_user_id(authorization)
+    invite_code = request.invite_code.strip().upper()
 
     check_rate_limit(
         "join_ip",
@@ -888,7 +815,7 @@ def join_group(
         if group is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail='No group was found for this invite code.',
+                detail="No group was found for this invite code.",
             )
 
         (
@@ -916,9 +843,7 @@ def join_group(
         if joined_now and group_status != "OPEN":
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=(
-                    'You cannot join a group that has already been drawn.'
-                ),
+                detail=("You cannot join a group that has already been drawn."),
             )
 
         if joined_now:
@@ -931,14 +856,11 @@ def join_group(
                 (group_id,),
             ).fetchone()[0]
 
-            if (
-                member_count_before_join
-                >= MAX_GROUP_MEMBERS
-            ):
+            if member_count_before_join >= MAX_GROUP_MEMBERS:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail=(
-                        'This group has already reached the maximum number of members.'
+                        "This group has already reached the maximum number of members."
                     ),
                 )
 

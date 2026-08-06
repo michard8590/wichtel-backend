@@ -3,7 +3,6 @@
 
 import secrets
 
-
 __all__ = [
     "create_account_code",
     "create_invite_code",
@@ -14,15 +13,9 @@ __all__ = [
 def create_account_code() -> str:
     alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
-    first = "".join(
-        secrets.choice(alphabet)
-        for _ in range(4)
-    )
+    first = "".join(secrets.choice(alphabet) for _ in range(4))
 
-    second = "".join(
-        secrets.choice(alphabet)
-        for _ in range(4)
-    )
+    second = "".join(secrets.choice(alphabet) for _ in range(4))
 
     return f"{first}-{second}"
 
@@ -30,10 +23,7 @@ def create_account_code() -> str:
 def create_recovery_key() -> str:
     raw = secrets.token_hex(8).upper()
 
-    return (
-        f"WICHTEL-{raw[0:4]}-{raw[4:8]}-"
-        f"{raw[8:12]}-{raw[12:16]}"
-    )
+    return f"WICHTEL-{raw[0:4]}-{raw[4:8]}-" f"{raw[8:12]}-{raw[12:16]}"
 
 
 def create_invite_code() -> str:

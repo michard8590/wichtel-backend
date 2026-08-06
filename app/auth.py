@@ -6,7 +6,6 @@ from fastapi import HTTPException, status
 from app.database import open_database
 from app.security import hash_secret
 
-
 __all__ = [
     "get_authenticated_user_id",
 ]
@@ -17,16 +16,14 @@ def get_authenticated_user_id(
 ) -> str:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Device token is missing.'
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Device token is missing."
         )
 
     token = authorization.removeprefix("Bearer ").strip()
 
     if not token:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Device token is missing.'
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Device token is missing."
         )
 
     with open_database() as connection:
@@ -42,7 +39,7 @@ def get_authenticated_user_id(
 
     if device is None:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Device token is invalid.'        )
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Device token is invalid."
+        )
 
     return device[0]

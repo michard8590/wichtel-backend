@@ -6,7 +6,6 @@ import sqlite3
 from app.config import DATABASE_PATH
 from app.identifiers import create_account_code
 
-
 __all__ = [
     "delete_groups_without_active_members",
     "initialise_database",
@@ -20,12 +19,8 @@ def open_database() -> sqlite3.Connection:
         timeout=5.0,
     )
 
-    connection.execute(
-        "PRAGMA foreign_keys = ON"
-    )
-    connection.execute(
-        "PRAGMA busy_timeout = 5000"
-    )
+    connection.execute("PRAGMA foreign_keys = ON")
+    connection.execute("PRAGMA busy_timeout = 5000")
 
     return connection
 
@@ -34,12 +29,8 @@ def initialise_database() -> None:
     DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     with open_database() as connection:
-        connection.execute(
-            "PRAGMA journal_mode = WAL"
-        )
-        connection.execute(
-            "PRAGMA synchronous = NORMAL"
-        )
+        connection.execute("PRAGMA journal_mode = WAL")
+        connection.execute("PRAGMA synchronous = NORMAL")
 
         connection.execute("""
             CREATE TABLE IF NOT EXISTS users (
@@ -51,30 +42,21 @@ def initialise_database() -> None:
             )
         """)
 
-        connection.execute(
-            "DROP INDEX IF EXISTS idx_users_display_name_nocase"
-        )
+        connection.execute("DROP INDEX IF EXISTS idx_users_display_name_nocase")
 
         user_columns = {
-            row[1]
-            for row in connection.execute(
-                "PRAGMA table_info(users)"
-            ).fetchall()
+            row[1] for row in connection.execute("PRAGMA table_info(users)").fetchall()
         }
 
         if "account_code" not in user_columns:
-            connection.execute(
-                "ALTER TABLE users ADD COLUMN account_code TEXT"
-            )
+            connection.execute("ALTER TABLE users ADD COLUMN account_code TEXT")
 
-        users_without_account_code = connection.execute(
-            """
+        users_without_account_code = connection.execute("""
             SELECT id
             FROM users
             WHERE account_code IS NULL
                OR TRIM(account_code) = ''
-            """
-        ).fetchall()
+            """).fetchall()
 
         for (existing_user_id,) in users_without_account_code:
             for _ in range(100):
@@ -103,9 +85,7 @@ def initialise_database() -> None:
                     )
                     break
             else:
-                raise RuntimeError(
-                    "Es konnte kein eindeutiger Account-Code erzeugt werden."
-                )
+                raise RuntimeError("A unique account code could not be generated.")
 
         connection.execute("""
             CREATE UNIQUE INDEX IF NOT EXISTS
@@ -125,7 +105,6 @@ def initialise_database() -> None:
             )
         """)
 
-
         connection.execute("""
             CREATE TABLE IF NOT EXISTS groups (
                 id TEXT PRIMARY KEY,
@@ -141,24 +120,17 @@ def initialise_database() -> None:
         """)
 
         group_columns = {
-            row[1]
-            for row in connection.execute(
-                "PRAGMA table_info(groups)"
-            ).fetchall()
+            row[1] for row in connection.execute("PRAGMA table_info(groups)").fetchall()
         }
 
         if "budget_cents" not in group_columns:
-            connection.execute(
-                "ALTER TABLE groups ADD COLUMN budget_cents INTEGER"
-            )
+            connection.execute("ALTER TABLE groups ADD COLUMN budget_cents INTEGER")
 
         if "budget_currency" not in group_columns:
-            connection.execute(
-                """
+            connection.execute("""
                 ALTER TABLE groups
                 ADD COLUMN budget_currency TEXT NOT NULL DEFAULT 'CHF'
-                """
-            )
+                """)
 
         connection.execute("""
             CREATE TABLE IF NOT EXISTS group_members (
@@ -215,28 +187,21 @@ def initialise_database() -> None:
         """)
 
         user_columns = {
-            row[1]
-            for row in connection.execute(
-                "PRAGMA table_info(users)"
-            ).fetchall()
+            row[1] for row in connection.execute("PRAGMA table_info(users)").fetchall()
         }
 
         if "is_deleted" not in user_columns:
-            connection.execute(
-                """
+            connection.execute("""
                 ALTER TABLE users
                 ADD COLUMN is_deleted INTEGER
                 NOT NULL DEFAULT 0
-                """
-            )
+                """)
 
         if "deleted_at" not in user_columns:
-            connection.execute(
-                """
+            connection.execute("""
                 ALTER TABLE users
                 ADD COLUMN deleted_at TEXT
-                """
-            )
+                """)
 
         connection.commit()
 
@@ -244,8 +209,7 @@ def initialise_database() -> None:
 def delete_groups_without_active_members(
     connection: sqlite3.Connection,
 ) -> int:
-    cursor = connection.execute(
-        """
+    cursor = connection.execute("""
         DELETE FROM groups
         WHERE NOT EXISTS (
             SELECT 1
@@ -255,7 +219,6 @@ def delete_groups_without_active_members(
             WHERE gm.group_id = groups.id
               AND COALESCE(u.is_deleted, 0) = 0
         )
-        """
-    )
+        """)
 
     return cursor.rowcount

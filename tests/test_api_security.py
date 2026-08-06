@@ -56,8 +56,7 @@ def register(
 
 def auth_headers(user: dict) -> dict[str, str]:
     return {
-        "Authorization":
-            f"Bearer {user['device_token']}",
+        "Authorization": f"Bearer {user['device_token']}",
     }
 
 
@@ -98,10 +97,7 @@ def test_database_is_temporary(api):
 
     assert database_path.exists()
     assert str(database_path).startswith("/tmp/")
-    assert (
-        database_path
-        != Path("/opt/wichtel/backend/data/wichtel.db")
-    )
+    assert database_path != Path("/opt/wichtel/backend/data/wichtel.db")
 
 
 def test_request_without_token_is_rejected(api):
@@ -174,23 +170,26 @@ def test_non_owner_cannot_remove_member(api):
     second_member = register(client, "Member Two")
     group = create_group(client, owner)
 
-    assert join_group(
-        client,
-        member,
-        group["invite_code"],
-    ).status_code == 200
+    assert (
+        join_group(
+            client,
+            member,
+            group["invite_code"],
+        ).status_code
+        == 200
+    )
 
-    assert join_group(
-        client,
-        second_member,
-        group["invite_code"],
-    ).status_code == 200
+    assert (
+        join_group(
+            client,
+            second_member,
+            group["invite_code"],
+        ).status_code
+        == 200
+    )
 
     response = client.delete(
-        (
-            f"/api/groups/{group['id']}/members/"
-            f"{second_member['user_id']}"
-        ),
+        (f"/api/groups/{group['id']}/members/" f"{second_member['user_id']}"),
         headers=auth_headers(member),
     )
 
@@ -204,11 +203,14 @@ def test_user_cannot_edit_another_users_wish(api):
     member = register(client, "Member")
     group = create_group(client, owner)
 
-    assert join_group(
-        client,
-        member,
-        group["invite_code"],
-    ).status_code == 200
+    assert (
+        join_group(
+            client,
+            member,
+            group["invite_code"],
+        ).status_code
+        == 200
+    )
 
     created = client.post(
         f"/api/groups/{group['id']}/wishlist",
@@ -224,10 +226,7 @@ def test_user_cannot_edit_another_users_wish(api):
     item_id = created.json()["id"]
 
     response = client.put(
-        (
-            f"/api/groups/{group['id']}/wishlist/"
-            f"{item_id}"
-        ),
+        (f"/api/groups/{group['id']}/wishlist/" f"{item_id}"),
         headers=auth_headers(member),
         json={
             "title": "Manipuliert",
@@ -247,17 +246,23 @@ def test_only_owner_can_draw(api):
     member_two = register(client, "Member Two")
     group = create_group(client, owner)
 
-    assert join_group(
-        client,
-        member_one,
-        group["invite_code"],
-    ).status_code == 200
+    assert (
+        join_group(
+            client,
+            member_one,
+            group["invite_code"],
+        ).status_code
+        == 200
+    )
 
-    assert join_group(
-        client,
-        member_two,
-        group["invite_code"],
-    ).status_code == 200
+    assert (
+        join_group(
+            client,
+            member_two,
+            group["invite_code"],
+        ).status_code
+        == 200
+    )
 
     response = client.post(
         f"/api/groups/{group['id']}/draw",
@@ -280,11 +285,14 @@ def test_draw_has_no_self_assignments(api):
     group = create_group(client, users[0])
 
     for user in users[1:]:
-        assert join_group(
-            client,
-            user,
-            group["invite_code"],
-        ).status_code == 200
+        assert (
+            join_group(
+                client,
+                user,
+                group["invite_code"],
+            ).status_code
+            == 200
+        )
 
     response = client.post(
         f"/api/groups/{group['id']}/draw",
@@ -306,15 +314,9 @@ def test_draw_has_no_self_assignments(api):
         ).fetchall()
 
     assert len(assignments) == len(users)
-    assert all(
-        giver != receiver
-        for giver, receiver in assignments
-    )
+    assert all(giver != receiver for giver, receiver in assignments)
 
-    assert len({
-        receiver
-        for _, receiver in assignments
-    }) == len(users)
+    assert len({receiver for _, receiver in assignments}) == len(users)
 
 
 def test_member_only_sees_own_assignment(api):
@@ -329,16 +331,22 @@ def test_member_only_sees_own_assignment(api):
     group = create_group(client, users[0])
 
     for user in users[1:]:
-        assert join_group(
-            client,
-            user,
-            group["invite_code"],
-        ).status_code == 200
+        assert (
+            join_group(
+                client,
+                user,
+                group["invite_code"],
+            ).status_code
+            == 200
+        )
 
-    assert client.post(
-        f"/api/groups/{group['id']}/draw",
-        headers=auth_headers(users[0]),
-    ).status_code == 200
+    assert (
+        client.post(
+            f"/api/groups/{group['id']}/draw",
+            headers=auth_headers(users[0]),
+        ).status_code
+        == 200
+    )
 
     assignments = []
 
@@ -351,14 +359,9 @@ def test_member_only_sees_own_assignment(api):
         assert response.status_code == 200
         result = response.json()
 
-        assert (
-            result["receiver_user_id"]
-            != user["user_id"]
-        )
+        assert result["receiver_user_id"] != user["user_id"]
 
-        assignments.append(
-            result["receiver_user_id"]
-        )
+        assignments.append(result["receiver_user_id"])
 
     assert len(set(assignments)) == len(users)
 
@@ -379,10 +382,7 @@ def test_recovery_creates_new_device_token(api):
     assert response.status_code == 201
     recovered = response.json()
 
-    assert (
-        recovered["device_token"]
-        != user["device_token"]
-    )
+    assert recovered["device_token"] != user["device_token"]
 
     groups_response = client.get(
         "/api/groups",
@@ -401,8 +401,7 @@ def test_recovery_does_not_reveal_existing_account_codes(api):
         "/api/users/recover",
         json={
             "account_code": "AAAA-BBBB",
-            "recovery_key":
-                "WICHTEL-0000-0000-0000-0000",
+            "recovery_key": "WICHTEL-0000-0000-0000-0000",
         },
     )
 
@@ -410,20 +409,13 @@ def test_recovery_does_not_reveal_existing_account_codes(api):
         "/api/users/recover",
         json={
             "account_code": user["account_code"],
-            "recovery_key":
-                "WICHTEL-0000-0000-0000-0000",
+            "recovery_key": "WICHTEL-0000-0000-0000-0000",
         },
     )
 
-    assert (
-        unknown_response.status_code
-        == wrong_key_response.status_code
-    )
+    assert unknown_response.status_code == wrong_key_response.status_code
 
-    assert (
-        unknown_response.json()
-        == wrong_key_response.json()
-    )
+    assert unknown_response.json() == wrong_key_response.json()
 
 
 @pytest.mark.parametrize(
@@ -520,16 +512,22 @@ def test_drawn_group_cannot_be_updated(api):
     group = create_group(client, users[0])
 
     for user in users[1:]:
-        assert join_group(
-            client,
-            user,
-            group["invite_code"],
-        ).status_code == 200
+        assert (
+            join_group(
+                client,
+                user,
+                group["invite_code"],
+            ).status_code
+            == 200
+        )
 
-    assert client.post(
-        f"/api/groups/{group['id']}/draw",
-        headers=auth_headers(users[0]),
-    ).status_code == 200
+    assert (
+        client.post(
+            f"/api/groups/{group['id']}/draw",
+            headers=auth_headers(users[0]),
+        ).status_code
+        == 200
+    )
 
     response = client.patch(
         f"/api/groups/{group['id']}",
@@ -555,16 +553,22 @@ def test_drawn_group_wishlist_cannot_be_changed(api):
     group = create_group(client, users[0])
 
     for user in users[1:]:
-        assert join_group(
-            client,
-            user,
-            group["invite_code"],
-        ).status_code == 200
+        assert (
+            join_group(
+                client,
+                user,
+                group["invite_code"],
+            ).status_code
+            == 200
+        )
 
-    assert client.post(
-        f"/api/groups/{group['id']}/draw",
-        headers=auth_headers(users[0]),
-    ).status_code == 200
+    assert (
+        client.post(
+            f"/api/groups/{group['id']}/draw",
+            headers=auth_headers(users[0]),
+        ).status_code
+        == 200
+    )
 
     response = client.post(
         f"/api/groups/{group['id']}/wishlist",
@@ -723,20 +727,12 @@ def test_registration_rate_limit_returns_429(
 
     rate_limit = sys.modules["app.rate_limit"]
 
-    original_enabled = (
-        rate_limit.RATE_LIMIT_ENABLED
-    )
-    original_rule = (
-        rate_limit.RATE_LIMIT_RULES[
-            "register_ip"
-        ]
-    )
+    original_enabled = rate_limit.RATE_LIMIT_ENABLED
+    original_rule = rate_limit.RATE_LIMIT_RULES["register_ip"]
 
     try:
         rate_limit.RATE_LIMIT_ENABLED = True
-        rate_limit.RATE_LIMIT_RULES[
-            "register_ip"
-        ] = (2, 3600)
+        rate_limit.RATE_LIMIT_RULES["register_ip"] = (2, 3600)
 
         with rate_limit._rate_limit_lock:
             rate_limit._rate_limit_buckets.clear()
@@ -744,22 +740,19 @@ def test_registration_rate_limit_returns_429(
         first = client.post(
             "/api/users/register",
             json={
-                "display_name":
-                    "Rate Limit One",
+                "display_name": "Rate Limit One",
             },
         )
         second = client.post(
             "/api/users/register",
             json={
-                "display_name":
-                    "Rate Limit Two",
+                "display_name": "Rate Limit Two",
             },
         )
         blocked = client.post(
             "/api/users/register",
             json={
-                "display_name":
-                    "Rate Limit Three",
+                "display_name": "Rate Limit Three",
             },
         )
 
@@ -769,12 +762,8 @@ def test_registration_rate_limit_returns_429(
         assert "Retry-After" in blocked.headers
 
     finally:
-        rate_limit.RATE_LIMIT_ENABLED = (
-            original_enabled
-        )
-        rate_limit.RATE_LIMIT_RULES[
-            "register_ip"
-        ] = original_rule
+        rate_limit.RATE_LIMIT_ENABLED = original_enabled
+        rate_limit.RATE_LIMIT_RULES["register_ip"] = original_rule
 
         with rate_limit._rate_limit_lock:
             rate_limit._rate_limit_buckets.clear()

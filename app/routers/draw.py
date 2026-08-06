@@ -20,7 +20,6 @@ from app.schemas import (
 )
 from app.time_utils import utc_now
 
-
 router = APIRouter()
 
 
@@ -67,9 +66,7 @@ def get_own_draw_assignment(
         if assignment is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=(
-                    'The group was not found or you are not a member.'
-                ),
+                detail=("The group was not found or you are not a member."),
             )
 
         (
@@ -82,13 +79,13 @@ def get_own_draw_assignment(
         if group_status != "DRAWN":
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail='The group has not been drawn yet.',
+                detail="The group has not been drawn yet.",
             )
 
         if receiver_user_id is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail='No assignment was found for you.'
+                detail="No assignment was found for you.",
             )
 
         wishlist_rows = connection.execute(
@@ -116,8 +113,7 @@ def get_own_draw_assignment(
             description=description,
             link=link,
         )
-        for item_id, title, description, link
-        in wishlist_rows
+        for item_id, title, description, link in wishlist_rows
     ]
 
     return DrawAssignmentResponse(
@@ -159,7 +155,7 @@ def draw_group(
             if group is None:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail='The group was not found.',
+                    detail="The group was not found.",
                 )
 
             owner_user_id, group_status = group
@@ -167,15 +163,13 @@ def draw_group(
             if owner_user_id != user_id:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail=(
-                        'Only the group owner may start the draw.'
-                    ),
+                    detail=("Only the group owner may start the draw."),
                 )
 
             if group_status != "OPEN":
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail='This group has already been drawn.',
+                    detail="This group has already been drawn.",
                 )
 
             member_rows = connection.execute(
@@ -188,16 +182,12 @@ def draw_group(
                 (group_id,),
             ).fetchall()
 
-            member_ids = [
-                row[0]
-                for row in member_rows
-            ]
+            member_ids = [row[0] for row in member_rows]
 
             if len(member_ids) < 3:
                 raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                    detail=(
-                        'At least three members are required for the draw.'                    ),
+                    detail=("At least three members are required for the draw."),
                 )
 
             receivers = member_ids.copy()
@@ -207,16 +197,13 @@ def draw_group(
 
                 if all(
                     giver_id != receiver_id
-                    for giver_id, receiver_id
-                    in zip(member_ids, receivers)
+                    for giver_id, receiver_id in zip(member_ids, receivers)
                 ):
                     break
             else:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=(
-                        'A valid assignment could not be generated.'
-                    ),
+                    detail=("A valid assignment could not be generated."),
                 )
 
             created_at = utc_now()
@@ -238,8 +225,7 @@ def draw_group(
                         receiver_id,
                         created_at,
                     )
-                    for giver_id, receiver_id
-                    in zip(member_ids, receivers)
+                    for giver_id, receiver_id in zip(member_ids, receivers)
                 ],
             )
 
@@ -256,7 +242,7 @@ def draw_group(
             if cursor.rowcount != 1:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail='This group has already been drawn.',
+                    detail="This group has already been drawn.",
                 )
 
             connection.commit()
@@ -270,9 +256,7 @@ def draw_group(
 
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=(
-                    'The group may already have been drawn.'
-                ),
+                detail=("The group may already have been drawn."),
             ) from exception
 
         except sqlite3.Error as exception:
@@ -280,7 +264,7 @@ def draw_group(
 
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail='The draw could not be saved.',
+                detail="The draw could not be saved.",
             ) from exception
 
     return DrawGroupResponse(

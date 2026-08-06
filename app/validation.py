@@ -6,7 +6,6 @@ from urllib.parse import urlsplit
 
 from fastapi import HTTPException, status
 
-
 __all__ = [
     "validate_display_name",
     "validate_optional_http_url",
@@ -20,44 +19,28 @@ def validate_display_name(
 
     if len(display_name) < 2:
         raise HTTPException(
-            status_code=
-                status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=(
-                'The name must contain at least two characters.'
-            ),
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=("The name must contain at least two characters."),
         )
 
     if len(display_name) > 50:
         raise HTTPException(
-            status_code=
-                status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=(
-                'The name must not exceed 50 characters.'
-            ),
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=("The name must not exceed 50 characters."),
         )
 
     if any(
-        unicodedata.category(character).startswith("C")
-        for character in display_name
+        unicodedata.category(character).startswith("C") for character in display_name
     ):
         raise HTTPException(
-            status_code=
-                status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=(
-                'The name contains unsupported control characters.'
-            ),
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=("The name contains unsupported control characters."),
         )
 
-    if not any(
-        character.isalnum()
-        for character in display_name
-    ):
+    if not any(character.isalnum() for character in display_name):
         raise HTTPException(
-            status_code=
-                status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=(
-                'The name must contain at least one letter or number.'
-            ),
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=("The name must contain at least one letter or number."),
         )
 
     return display_name
@@ -78,9 +61,8 @@ def validate_optional_http_url(
         parsed = urlsplit(link)
     except ValueError as exception:
         raise HTTPException(
-            status_code=
-                status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail='The link is invalid.'
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="The link is invalid.",
         ) from exception
 
     if (
@@ -90,11 +72,8 @@ def validate_optional_http_url(
         or parsed.password is not None
     ):
         raise HTTPException(
-            status_code=
-                status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=(
-                'Links must start with http:// or https://.'
-            ),
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=("Links must start with http:// or https://."),
         )
 
     return link
