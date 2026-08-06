@@ -927,3 +927,51 @@ def test_invalid_recovery_credentials_return_error_code(api):
             "message": ("The account code or recovery key is invalid."),
         }
     }
+
+
+def test_non_owner_group_update_returns_error_code(api):
+    client, _ = api
+
+    owner = register(client, "Group Owner")
+    member = register(client, "Group Member")
+    group = create_group(client, owner)
+
+    join_group(client, member, group["invite_code"])
+
+    response = client.patch(
+        f"/api/groups/{group['id']}",
+        headers=auth_headers(member),
+        json={
+            "name": "Updated Group",
+        },
+    )
+
+    assert response.status_code == 403
+    assert response.json() == {
+        "detail": {
+            "code": "group_update_forbidden",
+            "message": "Only the group owner may update this group.",
+        }
+    }
+
+
+def test_unknown_invite_code_returns_error_code(api):
+    client, _ = api
+
+    user = register(client, "Invite Code User")
+
+    response = client.post(
+        "/api/groups/join",
+        headers=auth_headers(user),
+        json={
+            "invite_code": "ABC123",
+        },
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "detail": {
+            "code": "invite_code_not_found",
+            "message": "No group was found for this invite code.",
+        }
+    }

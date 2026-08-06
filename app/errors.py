@@ -36,6 +36,29 @@ class ErrorCode(StrEnum):
     ACCOUNT_DELETE_CONFLICT = "account_delete_conflict"
     ACCOUNT_DELETE_FAILED = "account_delete_failed"
 
+    GROUP_NAME_TOO_SHORT = "group_name_too_short"
+    OPEN_GROUP_LIMIT_REACHED = "open_group_limit_reached"
+    INVITE_CODE_GENERATION_FAILED = "invite_code_generation_failed"
+    GROUP_NOT_FOUND_OR_NOT_MEMBER = "group_not_found_or_not_member"
+    INVITE_CODE_NOT_FOUND = "invite_code_not_found"
+    GROUP_ALREADY_DRAWN = "group_already_drawn"
+    GROUP_NOT_FOUND = "group_not_found"
+    GROUP_UPDATE_FORBIDDEN = "group_update_forbidden"
+    GROUP_UPDATE_AFTER_DRAW_FORBIDDEN = "group_update_after_draw_forbidden"
+    GROUP_UPDATE_FAILED = "group_update_failed"
+    GROUP_OWNER_CANNOT_LEAVE = "group_owner_cannot_leave"
+    GROUP_LEAVE_AFTER_DRAW_FORBIDDEN = "group_leave_after_draw_forbidden"
+    GROUP_MEMBERSHIP_NOT_FOUND = "group_membership_not_found"
+    GROUP_LEAVE_FAILED = "group_leave_failed"
+    MEMBER_REMOVAL_FORBIDDEN = "member_removal_forbidden"
+    MEMBER_REMOVAL_AFTER_DRAW_FORBIDDEN = "member_removal_after_draw_forbidden"
+    GROUP_OWNER_REMOVAL_FORBIDDEN = "group_owner_removal_forbidden"
+    GROUP_MEMBER_NOT_FOUND = "group_member_not_found"
+    GROUP_MEMBER_REMOVAL_FAILED = "group_member_removal_failed"
+    GROUP_DELETE_FORBIDDEN = "group_delete_forbidden"
+    GROUP_DELETE_FAILED = "group_delete_failed"
+    GROUP_MEMBER_LIMIT_REACHED = "group_member_limit_reached"
+
 
 def api_error(
     *,

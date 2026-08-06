@@ -13,6 +13,7 @@ from fastapi import (
 )
 
 from app.auth import get_authenticated_user_id
+from app.errors import ErrorCode, api_error
 from app.config import (
     MAX_GROUP_MEMBERS,
     MAX_OPEN_GROUPS_PER_OWNER,
@@ -116,9 +117,10 @@ def create_group(
     group_name = request.name.strip()
 
     if len(group_name) < 2:
-        raise HTTPException(
+        raise api_error(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="The group name must contain at least two characters.",
+            code=ErrorCode.GROUP_NAME_TOO_SHORT,
+            message="The group name must contain at least two characters.",
         )
 
     group_id = str(uuid.uuid4())
@@ -138,9 +140,10 @@ def create_group(
         ).fetchone()[0]
 
         if open_group_count >= MAX_OPEN_GROUPS_PER_OWNER:
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=("You have already created the maximum number of open groups."),
+                code=ErrorCode.OPEN_GROUP_LIMIT_REACHED,
+                message="You have already created the maximum number of open groups.",
             )
         connection.execute("PRAGMA foreign_keys = ON")
 
@@ -195,9 +198,10 @@ def create_group(
             except sqlite3.IntegrityError:
                 connection.rollback()
         else:
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="An invite code could not be generated.",
+                code=ErrorCode.INVITE_CODE_GENERATION_FAILED,
+                message="An invite code could not be generated.",
             )
 
     return GroupResponse(
@@ -225,9 +229,10 @@ def update_group(
     group_name = request.name.strip()
 
     if len(group_name) < 2:
-        raise HTTPException(
+        raise api_error(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=("The group name must contain at least two characters."),
+            code=ErrorCode.GROUP_NAME_TOO_SHORT,
+            message="The group name must contain at least two characters.",
         )
 
     with open_database() as connection:
@@ -250,9 +255,10 @@ def update_group(
             ).fetchone()
 
             if group is None:
-                raise HTTPException(
+                raise api_error(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="The group was not found.",
+                    code=ErrorCode.GROUP_NOT_FOUND,
+                    message="The group was not found.",
                 )
 
             (
@@ -264,15 +270,17 @@ def update_group(
             ) = group
 
             if owner_user_id != user_id:
-                raise HTTPException(
+                raise api_error(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail=("Only the group owner may update this group."),
+                    code=ErrorCode.GROUP_UPDATE_FORBIDDEN,
+                    message="Only the group owner may update this group.",
                 )
 
             if group_status != "OPEN":
-                raise HTTPException(
+                raise api_error(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail=("The group cannot be updated after the draw."),
+                    code=ErrorCode.GROUP_UPDATE_AFTER_DRAW_FORBIDDEN,
+                    message="The group cannot be updated after the draw.",
                 )
 
             connection.execute(
@@ -310,9 +318,10 @@ def update_group(
         except sqlite3.Error as exception:
             connection.rollback()
 
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=("The group could not be updated."),
+                code=ErrorCode.GROUP_UPDATE_FAILED,
+                message="The group could not be updated.",
             ) from exception
 
     return GroupResponse(
@@ -354,25 +363,26 @@ def leave_group(
             ).fetchone()
 
             if group is None:
-                raise HTTPException(
+                raise api_error(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="The group was not found.",
+                    code=ErrorCode.GROUP_NOT_FOUND,
+                    message="The group was not found.",
                 )
 
             owner_user_id, group_status = group
 
             if owner_user_id == user_id:
-                raise HTTPException(
+                raise api_error(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail=(
-                        "The group owner cannot leave the group and must delete it instead."
-                    ),
+                    code=ErrorCode.GROUP_OWNER_CANNOT_LEAVE,
+                    message="The group owner cannot leave the group and must delete it instead.",
                 )
 
             if group_status != "OPEN":
-                raise HTTPException(
+                raise api_error(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail=("The group cannot be left after the draw."),
+                    code=ErrorCode.GROUP_LEAVE_AFTER_DRAW_FORBIDDEN,
+                    message="The group cannot be left after the draw.",
                 )
 
             membership = connection.execute(
@@ -389,9 +399,10 @@ def leave_group(
             ).fetchone()
 
             if membership is None:
-                raise HTTPException(
+                raise api_error(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=("You are not a member of this group."),
+                    code=ErrorCode.GROUP_MEMBERSHIP_NOT_FOUND,
+                    message="You are not a member of this group.",
                 )
 
             connection.execute(
@@ -429,9 +440,10 @@ def leave_group(
         except sqlite3.Error as exception:
             connection.rollback()
 
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=("The group could not be left."),
+                code=ErrorCode.GROUP_LEAVE_FAILED,
+                message="The group could not be left.",
             ) from exception
 
 
@@ -463,29 +475,33 @@ def remove_group_member(
             ).fetchone()
 
             if group is None:
-                raise HTTPException(
+                raise api_error(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="The group was not found.",
+                    code=ErrorCode.GROUP_NOT_FOUND,
+                    message="The group was not found.",
                 )
 
             owner_user_id, group_status = group
 
             if owner_user_id != user_id:
-                raise HTTPException(
+                raise api_error(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail=("Only the group owner may remove members."),
+                    code=ErrorCode.MEMBER_REMOVAL_FORBIDDEN,
+                    message="Only the group owner may remove members.",
                 )
 
             if group_status != "OPEN":
-                raise HTTPException(
+                raise api_error(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail=("Members cannot be removed after the draw."),
+                    code=ErrorCode.MEMBER_REMOVAL_AFTER_DRAW_FORBIDDEN,
+                    message="Members cannot be removed after the draw.",
                 )
 
             if member_user_id == owner_user_id:
-                raise HTTPException(
+                raise api_error(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail=("The group owner cannot be removed from their own group."),
+                    code=ErrorCode.GROUP_OWNER_REMOVAL_FORBIDDEN,
+                    message="The group owner cannot be removed from their own group.",
                 )
 
             membership = connection.execute(
@@ -502,9 +518,10 @@ def remove_group_member(
             ).fetchone()
 
             if membership is None:
-                raise HTTPException(
+                raise api_error(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=("The member was not found in this group."),
+                    code=ErrorCode.GROUP_MEMBER_NOT_FOUND,
+                    message="The member was not found in this group.",
                 )
 
             connection.execute(
@@ -542,9 +559,10 @@ def remove_group_member(
         except sqlite3.Error as exception:
             connection.rollback()
 
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=("The member could not be removed."),
+                code=ErrorCode.GROUP_MEMBER_REMOVAL_FAILED,
+                message="The member could not be removed.",
             ) from exception
 
 
@@ -582,9 +600,10 @@ def delete_group(
             ).fetchone()
 
             if group is None:
-                raise HTTPException(
+                raise api_error(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=("The group was not found."),
+                    code=ErrorCode.GROUP_NOT_FOUND,
+                    message="The group was not found.",
                 )
 
             (
@@ -618,9 +637,10 @@ def delete_group(
             )
 
             if not user_may_delete:
-                raise HTTPException(
+                raise api_error(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail=("You are not allowed to delete this group."),
+                    code=ErrorCode.GROUP_DELETE_FORBIDDEN,
+                    message="You are not allowed to delete this group.",
                 )
 
             connection.execute(
@@ -640,9 +660,10 @@ def delete_group(
         except sqlite3.Error as exception:
             connection.rollback()
 
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=("The group could not be deleted."),
+                code=ErrorCode.GROUP_DELETE_FAILED,
+                message="The group could not be deleted.",
             ) from exception
 
 
@@ -685,9 +706,10 @@ def get_group_detail(
         ).fetchone()
 
         if group is None:
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=("The group was not found or you are not a member."),
+                code=ErrorCode.GROUP_NOT_FOUND_OR_NOT_MEMBER,
+                message="The group was not found or you are not a member.",
             )
 
         (
@@ -813,9 +835,10 @@ def join_group(
         ).fetchone()
 
         if group is None:
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="No group was found for this invite code.",
+                code=ErrorCode.INVITE_CODE_NOT_FOUND,
+                message="No group was found for this invite code.",
             )
 
         (
@@ -841,9 +864,10 @@ def join_group(
         joined_now = existing_member is None
 
         if joined_now and group_status != "OPEN":
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=("You cannot join a group that has already been drawn."),
+                code=ErrorCode.GROUP_ALREADY_DRAWN,
+                message="You cannot join a group that has already been drawn.",
             )
 
         if joined_now:
@@ -857,11 +881,10 @@ def join_group(
             ).fetchone()[0]
 
             if member_count_before_join >= MAX_GROUP_MEMBERS:
-                raise HTTPException(
+                raise api_error(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail=(
-                        "This group has already reached the maximum number of members."
-                    ),
+                    code=ErrorCode.GROUP_MEMBER_LIMIT_REACHED,
+                    message="This group has already reached the maximum number of members.",
                 )
 
             connection.execute(
