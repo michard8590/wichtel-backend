@@ -27,6 +27,7 @@ from app.identifiers import (
 )
 from app.security import hash_secret
 from app.time_utils import utc_now
+from app.routers.health import router as health_router
 from app.rate_limit import (
     check_rate_limit,
     get_client_ip,
@@ -68,13 +69,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-
-@app.get("/api/health")
-def health() -> dict[str, str]:
-    return {
-        "status": "ok",
-        "service": "wichtel-backend",
-    }
+app.include_router(health_router)
 
 
 @app.post(
