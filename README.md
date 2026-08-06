@@ -1,36 +1,36 @@
 # Wichtel Backend
 
-Freies REST-Backend für die Android-App **Wichtel**.
+Free REST backend for the Android application **Wichtel**.
 
-Das Backend basiert auf FastAPI und SQLite. Es ermöglicht die Registrierung ohne Google-Dienste, das Erstellen und Beitreten von Wichtelgruppen, gruppenbezogene Wunschlisten und eine zufällige Wichtelzuteilung ohne Selbstzuweisung.
+The backend is built with FastAPI and SQLite. It provides account registration without Google services, Secret Santa groups, group-specific wishlists, and random assignments without assigning users to themselves.
 
-## Funktionen
+## Features
 
-- Benutzerkonto ohne E-Mail-Adresse oder externe Anmeldung
-- Wiederherstellung über Account-Code und Recovery-Key
-- Gerätebasierte Authentifizierung mit Bearer-Token
-- Wichtelgruppen erstellen, bearbeiten, verlassen und löschen
-- Gruppenbeitritt über Einladungscode
-- Verwaltung von Gruppenmitgliedern
-- Zufällige Auslosung ohne Selbstzuweisung
-- Gruppenbezogene Wunschlisten
-- Schutz ausgeloster Gruppen vor nachträglichen Änderungen
-- Rate Limiting für sensible Endpunkte
-- Automatische OpenAPI-Dokumentation
-- Persistente Speicherung mit SQLite
-- Betrieb mit Docker Compose hinter einem Reverse Proxy
+- User accounts without email addresses or external authentication
+- Account recovery using an account code and recovery key
+- Device-based authentication with bearer tokens
+- Create, update, leave, and delete Secret Santa groups
+- Join groups using invite codes
+- Manage group members
+- Random Secret Santa assignments without self-assignment
+- Group-specific wishlists
+- Protection against changes after a group has been drawn
+- Rate limiting for sensitive endpoints
+- Automatically generated OpenAPI documentation
+- Persistent SQLite storage
+- Docker Compose deployment behind a reverse proxy
 
-## Technologie
+## Technology
 
 - Python 3.13
 - FastAPI
 - Pydantic
 - SQLite
 - Uvicorn
-- Docker und Docker Compose
+- Docker and Docker Compose
 - Pytest
 
-## Projektstruktur
+## Project structure
 
 ```text
 app/
@@ -55,74 +55,74 @@ tests/
 └── test_api_security.py
 ```
 
-## Voraussetzungen
+## Requirements
 
 - Docker
 - Docker Compose
-- ein externes Docker-Netz namens `docker_web`
-- optional ein Reverse Proxy wie Nginx Proxy Manager
+- An external Docker network named `docker_web`
+- Optionally, a reverse proxy such as Nginx Proxy Manager
 
 ## Installation
 
-Repository klonen:
+Clone the repository:
 
 ```bash
 git clone https://github.com/michard8590/wichtel-backend.git
 cd wichtel-backend
 ```
 
-Beispielkonfiguration kopieren:
+Copy the example configuration:
 
 ```bash
 cp .env.example .env
 ```
 
-Das externe Docker-Netz anlegen, sofern es noch nicht existiert:
+Create the external Docker network if it does not already exist:
 
 ```bash
 docker network create docker_web
 ```
 
-Backend bauen und starten:
+Build and start the backend:
 
 ```bash
 docker compose up -d --build
 ```
 
-Status und Logs anzeigen:
+Display the container status and logs:
 
 ```bash
 docker compose ps
 docker compose logs -f
 ```
 
-Backend stoppen:
+Stop the backend:
 
 ```bash
 docker compose down
 ```
 
-Der Dienst ist innerhalb des Docker-Netzes unter Port `8000` erreichbar. Die SQLite-Datenbank wird im persistenten Datenverzeichnis unter `/app/data` gespeichert.
+The service is available on port `8000` inside the Docker network. The SQLite database is stored persistently under `/app/data`.
 
-## Konfiguration
+## Configuration
 
-Die Konfiguration erfolgt über Umgebungsvariablen, typischerweise in der Datei `.env`.
+Configuration is provided through environment variables, typically using the `.env` file.
 
-| Variable | Bedeutung | Standard |
+| Variable | Description | Default |
 |---|---|---|
-| `DATABASE_PATH` | Pfad zur SQLite-Datenbank | `/app/data/wichtel.db` |
-| `RATE_LIMIT_ENABLED` | Application-Rate-Limiting aktivieren | `true` |
-| `TRUSTED_PROXY_NETWORKS` | Vertrauenswürdige Proxy-IP-Adressen oder Netze | leer |
-| `MAX_ACTIVE_DEVICES_PER_USER` | Maximale Anzahl aktiver Geräte pro Benutzer | siehe `app/config.py` |
-| `MAX_OPEN_GROUPS_PER_OWNER` | Maximale Anzahl offener Gruppen pro Besitzer | siehe `app/config.py` |
-| `MAX_GROUP_MEMBERS` | Maximale Anzahl Mitglieder pro Gruppe | siehe `app/config.py` |
-| `MAX_WISHLIST_ITEMS_PER_USER_GROUP` | Maximale Anzahl Wünsche pro Benutzer und Gruppe | siehe `app/config.py` |
+| `DATABASE_PATH` | Path to the SQLite database | `/app/data/wichtel.db` |
+| `RATE_LIMIT_ENABLED` | Enable application-level rate limiting | `true` |
+| `TRUSTED_PROXY_NETWORKS` | Trusted reverse proxy IP addresses or networks | empty |
+| `MAX_ACTIVE_DEVICES_PER_USER` | Maximum active devices per user | see `app/config.py` |
+| `MAX_OPEN_GROUPS_PER_OWNER` | Maximum open groups per owner | see `app/config.py` |
+| `MAX_GROUP_MEMBERS` | Maximum members per group | see `app/config.py` |
+| `MAX_WISHLIST_ITEMS_PER_USER_GROUP` | Maximum wishlist items per user and group | see `app/config.py` |
 
-`X-Forwarded-For` und `X-Real-IP` werden nur ausgewertet, wenn die direkte Gegenstelle in `TRUSTED_PROXY_NETWORKS` liegt.
+`X-Forwarded-For` and `X-Real-IP` are only evaluated when the direct peer belongs to `TRUSTED_PROXY_NETWORKS`.
 
-## Lokale Entwicklung
+## Local development
 
-Virtuelle Umgebung erstellen und Abhängigkeiten installieren:
+Create a virtual environment and install the dependencies:
 
 ```bash
 python3 -m venv .venv
@@ -130,79 +130,79 @@ source .venv/bin/activate
 pip install --requirement requirements.txt
 ```
 
-Für einen lokalen Start einen beschreibbaren Datenbankpfad setzen:
+Set a writable database path for local development:
 
 ```bash
 export DATABASE_PATH=/tmp/wichtel-development.db
 ```
 
-Anwendung starten:
+Start the application:
 
 ```bash
 uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-## Authentifizierung
+## Authentication
 
-Geschützte Endpunkte erwarten das Geräte-Token im HTTP-Header:
+Protected endpoints require a device token in the HTTP header:
 
 ```http
 Authorization: Bearer DEVICE_TOKEN
 ```
 
-Das Geräte-Token wird bei der Registrierung oder Wiederherstellung ausgegeben. Geräte-Token und Recovery-Keys werden nur als Hash in der Datenbank gespeichert.
+The device token is returned during registration or account recovery. Device tokens and recovery keys are stored only as hashes in the database.
 
-## API-Endpunkte
+## API endpoints
 
 ### System
 
-| Methode | Pfad | Beschreibung |
+| Method | Path | Description |
 |---|---|---|
-| `GET` | `/api/health` | Status des Backends |
+| `GET` | `/api/health` | Return the backend status |
 
-### Benutzer
+### Users
 
-| Methode | Pfad | Beschreibung |
+| Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/users/register` | Benutzer registrieren |
-| `POST` | `/api/users/recover` | Benutzerkonto wiederherstellen |
-| `PATCH` | `/api/users/me` | Eigenes Profil bearbeiten |
-| `DELETE` | `/api/users/me` | Eigenes Benutzerkonto löschen |
+| `POST` | `/api/users/register` | Register a user |
+| `POST` | `/api/users/recover` | Recover a user account |
+| `PATCH` | `/api/users/me` | Update the current user profile |
+| `DELETE` | `/api/users/me` | Delete the current user account |
 
-### Gruppen
+### Groups
 
-| Methode | Pfad | Beschreibung |
+| Method | Path | Description |
 |---|---|---|
-| `GET` | `/api/groups` | Eigene Gruppen auflisten |
-| `POST` | `/api/groups` | Gruppe erstellen |
-| `POST` | `/api/groups/join` | Einer Gruppe beitreten |
-| `GET` | `/api/groups/{group_id}` | Gruppendetails abrufen |
-| `PATCH` | `/api/groups/{group_id}` | Gruppe bearbeiten |
-| `DELETE` | `/api/groups/{group_id}` | Gruppe löschen |
-| `DELETE` | `/api/groups/{group_id}/membership` | Gruppe verlassen |
-| `DELETE` | `/api/groups/{group_id}/members/{member_user_id}` | Mitglied entfernen |
+| `GET` | `/api/groups` | List the current user's groups |
+| `POST` | `/api/groups` | Create a group |
+| `POST` | `/api/groups/join` | Join a group |
+| `GET` | `/api/groups/{group_id}` | Return group details |
+| `PATCH` | `/api/groups/{group_id}` | Update a group |
+| `DELETE` | `/api/groups/{group_id}` | Delete a group |
+| `DELETE` | `/api/groups/{group_id}/membership` | Leave a group |
+| `DELETE` | `/api/groups/{group_id}/members/{member_user_id}` | Remove a member |
 
-### Wunschlisten
+### Wishlists
 
-| Methode | Pfad | Beschreibung |
+| Method | Path | Description |
 |---|---|---|
-| `GET` | `/api/groups/{group_id}/wishlist` | Eigene Wunschliste abrufen |
-| `POST` | `/api/groups/{group_id}/wishlist` | Wunsch hinzufügen |
-| `PUT` | `/api/groups/{group_id}/wishlist/{item_id}` | Wunsch bearbeiten |
-| `DELETE` | `/api/groups/{group_id}/wishlist/{item_id}` | Wunsch löschen |
+| `GET` | `/api/groups/{group_id}/wishlist` | Return the current user's wishlist |
+| `POST` | `/api/groups/{group_id}/wishlist` | Add a wishlist item |
+| `PUT` | `/api/groups/{group_id}/wishlist/{item_id}` | Update a wishlist item |
+| `DELETE` | `/api/groups/{group_id}/wishlist/{item_id}` | Delete a wishlist item |
 
-### Auslosung
+### Draw
 
-| Methode | Pfad | Beschreibung |
+| Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/groups/{group_id}/draw` | Gruppe auslosen |
-| `GET` | `/api/groups/{group_id}/assignment` | Eigene Zuweisung abrufen |
+| `POST` | `/api/groups/{group_id}/draw` | Draw the group assignments |
+| `GET` | `/api/groups/{group_id}/assignment` | Return the current user's assignment |
 
-Das Backend stellt insgesamt 19 API-Operationen über 13 unterschiedliche Pfade bereit.
+The backend provides 19 API operations across 13 distinct paths.
 
-## API-Dokumentation
+## API documentation
 
-FastAPI erzeugt automatisch folgende Dokumentation:
+FastAPI automatically generates documentation at:
 
 - `/docs`
 - `/redoc`
@@ -210,23 +210,23 @@ FastAPI erzeugt automatisch folgende Dokumentation:
 
 ## Tests
 
-Tests und Syntaxprüfung ausführen:
+Run the tests and compile all Python modules:
 
 ```bash
 python -m pytest -q
 python -m compileall -q app tests
 ```
 
-Docker-Konfiguration und Image prüfen:
+Validate the Docker Compose configuration and build the image:
 
 ```bash
 docker compose config
 docker compose build
 ```
 
-## Datensicherung
+## Database backup
 
-Vor einer Sicherung sollte eine konsistente SQLite-Kopie erzeugt werden:
+Create a consistent SQLite backup before copying the database:
 
 ```bash
 docker exec -i wichtel-backend python3 - <<'PY'
@@ -243,25 +243,25 @@ target.close()
 PY
 ```
 
-Die erzeugte Datei anschliessend aus dem Datenverzeichnis kopieren und ausserhalb des Repositorys speichern.
+Copy the generated backup file from the persistent data directory and store it outside the repository.
 
-## Sicherheit
+## Security
 
-Der Container und die Anwendung sind unter anderem wie folgt abgesichert:
+The container and application use several security measures:
 
-- Betrieb ohne Root-Rechte
-- schreibgeschütztes Root-Dateisystem
-- Entfernung aller Linux-Capabilities
-- `no-new-privileges`
-- Schreibzugriff nur auf `/app/data` und `/tmp`
-- Geräte-Token und Recovery-Keys nur als Hash
-- Berechtigungsprüfungen für Benutzer, Gruppen und Wunschlisten
-- Grenzwerte für Geräte, Gruppen, Mitglieder und Wünsche
-- Rate Limits für Registrierung, Recovery und Gruppenbeitritt
-- Auswertung weitergeleiteter Client-IP-Adressen nur über vertrauenswürdige Proxies
+- Runs as a non-root user
+- Read-only root filesystem
+- All Linux capabilities removed
+- `no-new-privileges` enabled
+- Write access limited to `/app/data` and `/tmp`
+- Device tokens and recovery keys stored only as hashes
+- Authorization checks for users, groups, and wishlists
+- Limits for devices, groups, members, and wishlist items
+- Rate limiting for registration, recovery, and group joining
+- Forwarded client IP addresses accepted only from trusted proxies
 
-## Lizenz
+## License
 
-Dieses Projekt steht unter der GNU Affero General Public License, Version 3 oder höher (`AGPL-3.0-or-later`).
+This project is licensed under the GNU Affero General Public License, version 3 or later (`AGPL-3.0-or-later`).
 
-Siehe die Datei `LICENSE` für den vollständigen Lizenztext.
+See the `LICENSE` file for the complete license text.
