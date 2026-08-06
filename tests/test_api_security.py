@@ -767,3 +767,301 @@ def test_registration_rate_limit_returns_429(
 
         with rate_limit._rate_limit_lock:
             rate_limit._rate_limit_buckets.clear()
+
+
+def test_missing_device_token_returns_machine_readable_error(api):
+    client, _ = api
+
+    response = client.get("/api/groups")
+
+    assert response.status_code == 401
+    assert response.json() == {
+        "detail": {
+            "code": "missing_device_token",
+            "message": "Device token is missing.",
+        }
+    }
+
+
+def test_invalid_device_token_returns_machine_readable_error(api):
+    client, _ = api
+
+    response = client.get(
+        "/api/groups",
+        headers={
+            "Authorization": "Bearer invalid-device-token",
+        },
+    )
+
+    assert response.status_code == 401
+    assert response.json() == {
+        "detail": {
+            "code": "invalid_device_token",
+            "message": "Device token is invalid.",
+        }
+    }
+
+
+def test_short_name_returns_machine_readable_error(api):
+    client, _ = api
+
+    response = client.post(
+        "/api/users/register",
+        json={
+            "display_name": "A",
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": {
+            "code": "request_validation_failed",
+            "message": "Request validation failed.",
+            "errors": [
+                {
+                    "code": "name_too_short",
+                    "field": "display_name",
+                    "message": ("String should have at least " "2 characters"),
+                }
+            ],
+        }
+    }
+
+
+def test_unsafe_wishlist_link_returns_machine_readable_error(api):
+    client, _ = api
+
+    owner = register(client, "Link Error Owner")
+    group = create_group(client, owner)
+
+    response = client.post(
+        f"/api/groups/{group['id']}/wishlist",
+        headers=auth_headers(owner),
+        json={
+            "title": "Unsafe link",
+            "description": None,
+            "link": "javascript:alert(1)",
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": {
+            "code": "unsupported_link_scheme",
+            "message": "Links must start with http:// or https://.",
+        }
+    }
+
+
+def test_rate_limit_returns_machine_readable_error(
+    tmp_path,
+    monkeypatch,
+):
+    database_path = tmp_path / "wichtel-rate-limit-test.db"
+
+    monkeypatch.setenv(
+        "DATABASE_PATH",
+        str(database_path),
+    )
+    monkeypatch.setenv(
+        "RATE_LIMIT_ENABLED",
+        "true",
+    )
+
+    import importlib
+    import sys
+
+    for module_name in [
+        "app.main",
+        "app.routers.users",
+        "app.rate_limit",
+        "app.database",
+        "app.config",
+        "app.errors",
+        "app",
+    ]:
+        sys.modules.pop(module_name, None)
+
+    main = importlib.import_module("app.main")
+
+    from fastapi.testclient import TestClient
+
+    with TestClient(main.app) as client:
+        responses = [
+            client.post(
+                "/api/users/register",
+                json={
+                    "display_name": f"Rate Limit {index}",
+                },
+            )
+            for index in range(6)
+        ]
+
+    response = responses[-1]
+
+    assert response.status_code == 429
+    assert response.headers["Retry-After"]
+    assert response.json() == {
+        "detail": {
+            "code": "rate_limit_exceeded",
+            "message": "Too many requests. Please try again later.",
+        }
+    }
+
+
+def test_invalid_recovery_credentials_return_error_code(api):
+    client, _ = api
+
+    response = client.post(
+        "/api/users/recover",
+        json={
+            "account_code": "INVALID-CODE",
+            "recovery_key": "INVALID-RECOVERY-KEY",
+        },
+    )
+
+    assert response.status_code == 401
+    assert response.json() == {
+        "detail": {
+            "code": "invalid_recovery_credentials",
+            "message": ("The account code or recovery key is invalid."),
+        }
+    }
+
+
+def test_non_owner_group_update_returns_error_code(api):
+    client, _ = api
+
+    owner = register(client, "Group Owner")
+    member = register(client, "Group Member")
+    group = create_group(client, owner)
+
+    join_group(client, member, group["invite_code"])
+
+    response = client.patch(
+        f"/api/groups/{group['id']}",
+        headers=auth_headers(member),
+        json={
+            "name": "Updated Group",
+        },
+    )
+
+    assert response.status_code == 403
+    assert response.json() == {
+        "detail": {
+            "code": "group_update_forbidden",
+            "message": "Only the group owner may update this group.",
+        }
+    }
+
+
+def test_unknown_invite_code_returns_error_code(api):
+    client, _ = api
+
+    user = register(client, "Invite Code User")
+
+    response = client.post(
+        "/api/groups/join",
+        headers=auth_headers(user),
+        json={
+            "invite_code": "ABC123",
+        },
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "detail": {
+            "code": "invite_code_not_found",
+            "message": "No group was found for this invite code.",
+        }
+    }
+
+
+def test_blank_wishlist_title_returns_error_code(api):
+    client, _ = api
+
+    owner = register(client, "Wishlist Title Owner")
+    group = create_group(client, owner)
+
+    response = client.post(
+        f"/api/groups/{group['id']}/wishlist",
+        headers=auth_headers(owner),
+        json={
+            "title": "   ",
+            "description": None,
+            "link": None,
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": {
+            "code": "wishlist_title_required",
+            "message": "The wishlist item requires a title.",
+        }
+    }
+
+
+def test_unknown_wishlist_item_returns_error_code(api):
+    client, _ = api
+
+    owner = register(client, "Wishlist Missing Owner")
+    group = create_group(client, owner)
+
+    response = client.put(
+        (f"/api/groups/{group['id']}/wishlist/" "00000000-0000-0000-0000-000000000001"),
+        headers=auth_headers(owner),
+        json={
+            "title": "Updated wish",
+            "description": None,
+            "link": None,
+        },
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "detail": {
+            "code": "wishlist_item_not_found",
+            "message": "The wishlist item was not found.",
+        }
+    }
+
+
+def test_assignment_before_draw_returns_error_code(api):
+    client, _ = api
+
+    owner = register(client, "Assignment Owner")
+    group = create_group(client, owner)
+
+    response = client.get(
+        f"/api/groups/{group['id']}/assignment",
+        headers=auth_headers(owner),
+    )
+
+    assert response.status_code == 409
+    assert response.json() == {
+        "detail": {
+            "code": "draw_not_completed",
+            "message": "The group has not been drawn yet.",
+        }
+    }
+
+
+def test_draw_with_too_few_members_returns_error_code(api):
+    client, _ = api
+
+    owner = register(client, "Small Draw Owner")
+    group = create_group(client, owner)
+
+    response = client.post(
+        f"/api/groups/{group['id']}/draw",
+        headers=auth_headers(owner),
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": {
+            "code": "draw_requires_three_members",
+            "message": ("At least three members are required for the draw."),
+        }
+    }

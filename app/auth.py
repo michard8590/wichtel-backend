@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Michael Gsell
 
-from fastapi import HTTPException, status
+from fastapi import status
 
 from app.database import open_database
+from app.errors import ErrorCode, api_error
 from app.security import hash_secret
 
 __all__ = [
@@ -15,15 +16,19 @@ def get_authenticated_user_id(
     authorization: str | None,
 ) -> str:
     if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Device token is missing."
+        raise api_error(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            code=ErrorCode.MISSING_DEVICE_TOKEN,
+            message="Device token is missing.",
         )
 
     token = authorization.removeprefix("Bearer ").strip()
 
     if not token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Device token is missing."
+        raise api_error(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            code=ErrorCode.MISSING_DEVICE_TOKEN,
+            message="Device token is missing.",
         )
 
     with open_database() as connection:
@@ -38,8 +43,10 @@ def get_authenticated_user_id(
         ).fetchone()
 
     if device is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Device token is invalid."
+        raise api_error(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            code=ErrorCode.INVALID_DEVICE_TOKEN,
+            message="Device token is invalid.",
         )
 
     return device[0]

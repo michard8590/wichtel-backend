@@ -6,7 +6,9 @@ import threading
 import time
 from collections import defaultdict, deque
 
-from fastapi import HTTPException, Request, status
+from fastapi import Request, status
+
+from app.errors import ErrorCode, api_error
 
 from app.config import (
     RATE_LIMIT_ENABLED,
@@ -100,9 +102,10 @@ def check_rate_limit(
                 int(window_seconds - (now - bucket[0])) + 1,
             )
 
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=("Too many requests. Please try again later."),
+                code=ErrorCode.RATE_LIMIT_EXCEEDED,
+                message="Too many requests. Please try again later.",
                 headers={
                     "Retry-After": str(retry_after),
                 },
