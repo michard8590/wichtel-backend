@@ -1,0 +1,70 @@
+name: Repository security checks
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  repository-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Reject sensitive filenames
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          forbidden="$(
+            find . \
+              -path './.git' -prune -o \
+              -type f \
+              \( \
+                -name '.env' \
+                -o -name '*.db' \
+                -o -name '*.db-shm' \
+                -o -name '*.db-wal' \
+                -o -name '*.sqlite' \
+                -o -name '*.sqlite3' \
+                -o -name '*.backup-*' \
+                -o -name 'Dockerfile.broken-*' \
+              \) \
+              -print
+          )"
+
+          if [ -n "$forbidden" ]; then
+            echo "Unerlaubte Dateien gefunden:"
+            printf '%s\n' "$forbidden"
+            exit 1
+          fi
+
+      - name: Reject production-specific values
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          if grep -RIn \
+            --exclude-dir=.git \
+            --exclude='.env.example' \
+            '172\.32\.0\.11' \
+            .
+          then
+            echo "Produktive Proxy-IP gefunden."
+            exit 1
+          fi
+
+      - name: Verify ignore rules
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          grep -Fxq 'data/' .gitignore
+          grep -Fxq '.env' .gitignore
+          grep -Fxq 'data' .dockerignore
