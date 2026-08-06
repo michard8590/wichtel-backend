@@ -21,6 +21,7 @@ def api(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
     for module_name in [
         "app.main",
+        "app.routers.draw",
         "app.routers.wishlists",
         "app.routers.groups",
         "app.routers.users",
