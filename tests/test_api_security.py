@@ -21,6 +21,7 @@ def api(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
     for module_name in [
         "app.main",
+        "app.rate_limit",
         "app.database",
         "app.config",
         "app",
@@ -715,25 +716,25 @@ def test_registration_rate_limit_returns_429(
 
     import sys
 
-    main = sys.modules["app.main"]
+    rate_limit = sys.modules["app.rate_limit"]
 
     original_enabled = (
-        main.RATE_LIMIT_ENABLED
+        rate_limit.RATE_LIMIT_ENABLED
     )
     original_rule = (
-        main.RATE_LIMIT_RULES[
+        rate_limit.RATE_LIMIT_RULES[
             "register_ip"
         ]
     )
 
     try:
-        main.RATE_LIMIT_ENABLED = True
-        main.RATE_LIMIT_RULES[
+        rate_limit.RATE_LIMIT_ENABLED = True
+        rate_limit.RATE_LIMIT_RULES[
             "register_ip"
         ] = (2, 3600)
 
-        with main._rate_limit_lock:
-            main._rate_limit_buckets.clear()
+        with rate_limit._rate_limit_lock:
+            rate_limit._rate_limit_buckets.clear()
 
         first = client.post(
             "/api/users/register",
@@ -763,12 +764,12 @@ def test_registration_rate_limit_returns_429(
         assert "Retry-After" in blocked.headers
 
     finally:
-        main.RATE_LIMIT_ENABLED = (
+        rate_limit.RATE_LIMIT_ENABLED = (
             original_enabled
         )
-        main.RATE_LIMIT_RULES[
+        rate_limit.RATE_LIMIT_RULES[
             "register_ip"
         ] = original_rule
 
-        with main._rate_limit_lock:
-            main._rate_limit_buckets.clear()
+        with rate_limit._rate_limit_lock:
+            rate_limit._rate_limit_buckets.clear()
