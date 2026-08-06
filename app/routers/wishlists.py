@@ -6,11 +6,11 @@ import uuid
 from fastapi import (
     APIRouter,
     Header,
-    HTTPException,
     status,
 )
 
 from app.auth import get_authenticated_user_id
+from app.errors import ErrorCode, api_error
 from app.config import MAX_WISHLIST_ITEMS_PER_USER_GROUP
 from app.database import open_database
 from app.schemas import (
@@ -45,9 +45,10 @@ def create_wishlist_item(
     link = validate_optional_http_url(request.link)
 
     if not title:
-        raise HTTPException(
+        raise api_error(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="The wishlist item requires a title.",
+            code=ErrorCode.WISHLIST_TITLE_REQUIRED,
+            message="The wishlist item requires a title.",
         )
 
     with open_database() as connection:
@@ -69,15 +70,17 @@ def create_wishlist_item(
         ).fetchone()
 
         if membership is None:
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=("The group was not found or you are not a member."),
+                code=ErrorCode.GROUP_NOT_FOUND_OR_NOT_MEMBER,
+                message="The group was not found or you are not a member.",
             )
 
         if membership[0] != "OPEN":
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=("Wishlist items cannot be added after the draw."),
+                code=ErrorCode.WISHLIST_CREATE_AFTER_DRAW_FORBIDDEN,
+                message="Wishlist items cannot be added after the draw.",
             )
 
         wishlist_item_count = connection.execute(
@@ -94,11 +97,10 @@ def create_wishlist_item(
         ).fetchone()[0]
 
         if wishlist_item_count >= MAX_WISHLIST_ITEMS_PER_USER_GROUP:
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=(
-                    "The maximum number of wishlist items has been reached for this group."
-                ),
+                code=ErrorCode.WISHLIST_ITEM_LIMIT_REACHED,
+                message="The maximum number of wishlist items has been reached for this group.",
             )
 
         item_id = str(uuid.uuid4())
@@ -161,9 +163,10 @@ def update_wishlist_item(
     link = validate_optional_http_url(request.link)
 
     if not title:
-        raise HTTPException(
+        raise api_error(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="The wishlist item requires a title.",
+            code=ErrorCode.WISHLIST_TITLE_REQUIRED,
+            message="The wishlist item requires a title.",
         )
 
     with open_database() as connection:
@@ -189,15 +192,17 @@ def update_wishlist_item(
         ).fetchone()
 
         if item is None:
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="The wishlist item was not found.",
+                code=ErrorCode.WISHLIST_ITEM_NOT_FOUND,
+                message="The wishlist item was not found.",
             )
 
         if item[1] != "OPEN":
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=("Wishlist items cannot be updated after the draw."),
+                code=ErrorCode.WISHLIST_UPDATE_AFTER_DRAW_FORBIDDEN,
+                message="Wishlist items cannot be updated after the draw.",
             )
 
         connection.execute(
@@ -265,15 +270,17 @@ def delete_wishlist_item(
         ).fetchone()
 
         if item is None:
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="The wishlist item was not found.",
+                code=ErrorCode.WISHLIST_ITEM_NOT_FOUND,
+                message="The wishlist item was not found.",
             )
 
         if item[1] != "OPEN":
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=("Wishlist items cannot be deleted after the draw."),
+                code=ErrorCode.WISHLIST_DELETE_AFTER_DRAW_FORBIDDEN,
+                message="Wishlist items cannot be deleted after the draw.",
             )
 
         cursor = connection.execute(
@@ -291,9 +298,10 @@ def delete_wishlist_item(
         )
 
         if cursor.rowcount != 1:
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=("The wishlist item could not be deleted unambiguously."),
+                code=ErrorCode.WISHLIST_DELETE_AMBIGUOUS,
+                message="The wishlist item could not be deleted unambiguously.",
             )
 
         connection.commit()
@@ -324,9 +332,10 @@ def get_own_wishlist(
         ).fetchone()
 
         if membership is None:
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="The group was not found or you are not a member.",
+                code=ErrorCode.GROUP_NOT_FOUND_OR_NOT_MEMBER,
+                message="The group was not found or you are not a member.",
             )
 
         rows = connection.execute(

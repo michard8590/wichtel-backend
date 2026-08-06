@@ -59,6 +59,14 @@ class ErrorCode(StrEnum):
     GROUP_DELETE_FAILED = "group_delete_failed"
     GROUP_MEMBER_LIMIT_REACHED = "group_member_limit_reached"
 
+    WISHLIST_TITLE_REQUIRED = "wishlist_title_required"
+    WISHLIST_CREATE_AFTER_DRAW_FORBIDDEN = "wishlist_create_after_draw_forbidden"
+    WISHLIST_ITEM_LIMIT_REACHED = "wishlist_item_limit_reached"
+    WISHLIST_ITEM_NOT_FOUND = "wishlist_item_not_found"
+    WISHLIST_UPDATE_AFTER_DRAW_FORBIDDEN = "wishlist_update_after_draw_forbidden"
+    WISHLIST_DELETE_AFTER_DRAW_FORBIDDEN = "wishlist_delete_after_draw_forbidden"
+    WISHLIST_DELETE_AMBIGUOUS = "wishlist_delete_ambiguous"
+
 
 def api_error(
     *,

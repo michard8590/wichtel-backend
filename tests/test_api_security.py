@@ -975,3 +975,53 @@ def test_unknown_invite_code_returns_error_code(api):
             "message": "No group was found for this invite code.",
         }
     }
+
+
+def test_blank_wishlist_title_returns_error_code(api):
+    client, _ = api
+
+    owner = register(client, "Wishlist Title Owner")
+    group = create_group(client, owner)
+
+    response = client.post(
+        f"/api/groups/{group['id']}/wishlist",
+        headers=auth_headers(owner),
+        json={
+            "title": "   ",
+            "description": None,
+            "link": None,
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": {
+            "code": "wishlist_title_required",
+            "message": "The wishlist item requires a title.",
+        }
+    }
+
+
+def test_unknown_wishlist_item_returns_error_code(api):
+    client, _ = api
+
+    owner = register(client, "Wishlist Missing Owner")
+    group = create_group(client, owner)
+
+    response = client.put(
+        (f"/api/groups/{group['id']}/wishlist/" "00000000-0000-0000-0000-000000000001"),
+        headers=auth_headers(owner),
+        json={
+            "title": "Updated wish",
+            "description": None,
+            "link": None,
+        },
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "detail": {
+            "code": "wishlist_item_not_found",
+            "message": "The wishlist item was not found.",
+        }
+    }
