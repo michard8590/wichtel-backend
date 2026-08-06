@@ -14,6 +14,7 @@ from fastapi import (
 )
 
 from app.auth import get_authenticated_user_id
+from app.errors import ErrorCode, api_error
 from app.config import MAX_ACTIVE_DEVICES_PER_USER
 from app.database import (
     delete_groups_without_active_members,
@@ -80,9 +81,10 @@ def register_user(
             if already_exists is None:
                 break
         else:
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="An account code could not be generated.",
+                code=ErrorCode.ACCOUNT_CODE_GENERATION_FAILED,
+                message="An account code could not be generated.",
             )
 
     try:
@@ -133,17 +135,17 @@ def register_user(
             connection.commit()
 
     except sqlite3.IntegrityError as exception:
-        raise HTTPException(
+        raise api_error(
             status_code=status.HTTP_409_CONFLICT,
-            detail=(
-                "The profile could not be created because of a unique data conflict."
-            ),
+            code=ErrorCode.PROFILE_CONFLICT,
+            message="The profile could not be created because of a unique data conflict.",
         ) from exception
 
     except sqlite3.Error as exception:
-        raise HTTPException(
+        raise api_error(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="The user account could not be created.",
+            code=ErrorCode.ACCOUNT_CREATION_FAILED,
+            message="The user account could not be created.",
         ) from exception
 
     return RegisterResponse(
@@ -201,9 +203,10 @@ def recover_user(
                 supplied_recovery_hash,
             )
 
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=("The account code or recovery key is invalid."),
+                code=ErrorCode.INVALID_RECOVERY_CREDENTIALS,
+                message="The account code or recovery key is invalid.",
             )
 
         (
@@ -220,9 +223,10 @@ def recover_user(
         )
 
         if not recovery_matches or bool(is_deleted_value):
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=("The account code or recovery key is invalid."),
+                code=ErrorCode.INVALID_RECOVERY_CREDENTIALS,
+                message="The account code or recovery key is invalid.",
             )
 
         active_device_count = connection.execute(
@@ -236,11 +240,10 @@ def recover_user(
         ).fetchone()[0]
 
         if active_device_count >= MAX_ACTIVE_DEVICES_PER_USER:
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=(
-                    "Too many active devices are already registered for this profile."
-                ),
+                code=ErrorCode.ACTIVE_DEVICE_LIMIT_REACHED,
+                message="Too many active devices are already registered for this profile.",
             )
 
         device_id = str(uuid.uuid4())
@@ -272,9 +275,10 @@ def recover_user(
             connection.commit()
 
         except sqlite3.Error as exception:
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="The profile could not be recovered.",
+                code=ErrorCode.PROFILE_RECOVERY_FAILED,
+                message="The profile could not be recovered.",
             ) from exception
 
     return RecoverResponse(
@@ -315,9 +319,10 @@ def update_own_profile(
             ).fetchone()
 
             if user is None:
-                raise HTTPException(
+                raise api_error(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=("The profile was not found."),
+                    code=ErrorCode.PROFILE_NOT_FOUND,
+                    message="The profile was not found.",
                 )
 
             (
@@ -326,9 +331,10 @@ def update_own_profile(
             ) = user
 
             if bool(is_deleted_value):
-                raise HTTPException(
+                raise api_error(
                     status_code=status.HTTP_410_GONE,
-                    detail=("The profile has already been deleted."),
+                    code=ErrorCode.PROFILE_ALREADY_DELETED,
+                    message="The profile has already been deleted.",
                 )
 
             connection.execute(
@@ -352,9 +358,10 @@ def update_own_profile(
         except sqlite3.Error as exception:
             connection.rollback()
 
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=("The profile could not be updated."),
+                code=ErrorCode.PROFILE_UPDATE_FAILED,
+                message="The profile could not be updated.",
             ) from exception
 
     return ProfileResponse(
@@ -399,15 +406,17 @@ def delete_own_account(
             ).fetchone()
 
             if user is None:
-                raise HTTPException(
+                raise api_error(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=("The account was not found."),
+                    code=ErrorCode.ACCOUNT_NOT_FOUND,
+                    message="The account was not found.",
                 )
 
             if bool(user[0]):
-                raise HTTPException(
+                raise api_error(
                     status_code=status.HTTP_410_GONE,
-                    detail=("The account has already been deleted."),
+                    code=ErrorCode.ACCOUNT_ALREADY_DELETED,
+                    message="The account has already been deleted.",
                 )
 
             # Delete the user's open groups.
@@ -492,17 +501,17 @@ def delete_own_account(
         except sqlite3.IntegrityError as exception:
             connection.rollback()
 
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=(
-                    "The account could not be deleted because related data still exists."
-                ),
+                code=ErrorCode.ACCOUNT_DELETE_CONFLICT,
+                message="The account could not be deleted because related data still exists.",
             ) from exception
 
         except sqlite3.Error as exception:
             connection.rollback()
 
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=("The account could not be deleted."),
+                code=ErrorCode.ACCOUNT_DELETE_FAILED,
+                message="The account could not be deleted.",
             ) from exception

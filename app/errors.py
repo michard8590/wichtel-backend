@@ -22,6 +22,20 @@ class ErrorCode(StrEnum):
     UNSUPPORTED_LINK_SCHEME = "unsupported_link_scheme"
     RATE_LIMIT_EXCEEDED = "rate_limit_exceeded"
 
+    ACCOUNT_CODE_GENERATION_FAILED = "account_code_generation_failed"
+    PROFILE_CONFLICT = "profile_conflict"
+    ACCOUNT_CREATION_FAILED = "account_creation_failed"
+    INVALID_RECOVERY_CREDENTIALS = "invalid_recovery_credentials"
+    ACTIVE_DEVICE_LIMIT_REACHED = "active_device_limit_reached"
+    PROFILE_RECOVERY_FAILED = "profile_recovery_failed"
+    PROFILE_NOT_FOUND = "profile_not_found"
+    PROFILE_ALREADY_DELETED = "profile_already_deleted"
+    PROFILE_UPDATE_FAILED = "profile_update_failed"
+    ACCOUNT_NOT_FOUND = "account_not_found"
+    ACCOUNT_ALREADY_DELETED = "account_already_deleted"
+    ACCOUNT_DELETE_CONFLICT = "account_delete_conflict"
+    ACCOUNT_DELETE_FAILED = "account_delete_failed"
+
 
 def api_error(
     *,

@@ -907,3 +907,23 @@ def test_rate_limit_returns_machine_readable_error(
             "message": "Too many requests. Please try again later.",
         }
     }
+
+
+def test_invalid_recovery_credentials_return_error_code(api):
+    client, _ = api
+
+    response = client.post(
+        "/api/users/recover",
+        json={
+            "account_code": "INVALID-CODE",
+            "recovery_key": "INVALID-RECOVERY-KEY",
+        },
+    )
+
+    assert response.status_code == 401
+    assert response.json() == {
+        "detail": {
+            "code": "invalid_recovery_credentials",
+            "message": ("The account code or recovery key is invalid."),
+        }
+    }
