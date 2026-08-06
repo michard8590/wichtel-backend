@@ -2,48 +2,52 @@
 # Copyright (C) 2026 Michael Gsell
 
 import unicodedata
-from urllib.parse import urlsplit
+from urllib.parse import urlparse
 
-from fastapi import HTTPException, status
+from fastapi import status
 
-__all__ = [
-    "validate_display_name",
-    "validate_optional_http_url",
-]
+from app.errors import ErrorCode, api_error
 
 
 def validate_display_name(
-    value: str,
+    display_name: str,
 ) -> str:
-    display_name = value.strip()
+    normalized_name = unicodedata.normalize(
+        "NFC",
+        display_name.strip(),
+    )
 
-    if len(display_name) < 2:
-        raise HTTPException(
+    if len(normalized_name) < 2:
+        raise api_error(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=("The name must contain at least two characters."),
+            code=ErrorCode.NAME_TOO_SHORT,
+            message="The name must contain at least two characters.",
         )
 
-    if len(display_name) > 50:
-        raise HTTPException(
+    if len(normalized_name) > 50:
+        raise api_error(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=("The name must not exceed 50 characters."),
+            code=ErrorCode.NAME_TOO_LONG,
+            message="The name must not exceed 50 characters.",
         )
 
     if any(
-        unicodedata.category(character).startswith("C") for character in display_name
+        unicodedata.category(character).startswith("C") for character in normalized_name
     ):
-        raise HTTPException(
+        raise api_error(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=("The name contains unsupported control characters."),
+            code=ErrorCode.NAME_CONTAINS_CONTROL_CHARACTERS,
+            message="The name contains unsupported control characters.",
         )
 
-    if not any(character.isalnum() for character in display_name):
-        raise HTTPException(
+    if not any(character.isalnum() for character in normalized_name):
+        raise api_error(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=("The name must contain at least one letter or number."),
+            code=ErrorCode.NAME_REQUIRES_ALPHANUMERIC_CHARACTER,
+            message="The name must contain at least one letter or number.",
         )
 
-    return display_name
+    return normalized_name
 
 
 def validate_optional_http_url(
@@ -52,28 +56,35 @@ def validate_optional_http_url(
     if value is None:
         return None
 
-    link = value.strip()
+    normalized_value = value.strip()
 
-    if not link:
+    if not normalized_value:
         return None
 
     try:
-        parsed = urlsplit(link)
+        parsed = urlparse(normalized_value)
     except ValueError as exception:
-        raise HTTPException(
+        raise api_error(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="The link is invalid.",
+            code=ErrorCode.INVALID_LINK,
+            message="The link is invalid.",
         ) from exception
 
-    if (
-        parsed.scheme.lower() not in {"http", "https"}
-        or not parsed.netloc
-        or parsed.username is not None
-        or parsed.password is not None
-    ):
-        raise HTTPException(
+    if parsed.scheme not in {
+        "http",
+        "https",
+    }:
+        raise api_error(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=("Links must start with http:// or https://."),
+            code=ErrorCode.UNSUPPORTED_LINK_SCHEME,
+            message="Links must start with http:// or https://.",
         )
 
-    return link
+    if not parsed.netloc:
+        raise api_error(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            code=ErrorCode.INVALID_LINK,
+            message="The link is invalid.",
+        )
+
+    return normalized_value

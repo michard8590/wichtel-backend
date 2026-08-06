@@ -767,3 +767,87 @@ def test_registration_rate_limit_returns_429(
 
         with rate_limit._rate_limit_lock:
             rate_limit._rate_limit_buckets.clear()
+
+
+def test_missing_device_token_returns_machine_readable_error(api):
+    client, _ = api
+
+    response = client.get("/api/groups")
+
+    assert response.status_code == 401
+    assert response.json() == {
+        "detail": {
+            "code": "missing_device_token",
+            "message": "Device token is missing.",
+        }
+    }
+
+
+def test_invalid_device_token_returns_machine_readable_error(api):
+    client, _ = api
+
+    response = client.get(
+        "/api/groups",
+        headers={
+            "Authorization": "Bearer invalid-device-token",
+        },
+    )
+
+    assert response.status_code == 401
+    assert response.json() == {
+        "detail": {
+            "code": "invalid_device_token",
+            "message": "Device token is invalid.",
+        }
+    }
+
+
+def test_short_name_returns_machine_readable_error(api):
+    client, _ = api
+
+    response = client.post(
+        "/api/users/register",
+        json={
+            "display_name": "A",
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": {
+            "code": "request_validation_failed",
+            "message": "Request validation failed.",
+            "errors": [
+                {
+                    "code": "name_too_short",
+                    "field": "display_name",
+                    "message": ("String should have at least " "2 characters"),
+                }
+            ],
+        }
+    }
+
+
+def test_unsafe_wishlist_link_returns_machine_readable_error(api):
+    client, _ = api
+
+    owner = register(client, "Link Error Owner")
+    group = create_group(client, owner)
+
+    response = client.post(
+        f"/api/groups/{group['id']}/wishlist",
+        headers=auth_headers(owner),
+        json={
+            "title": "Unsafe link",
+            "description": None,
+            "link": "javascript:alert(1)",
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": {
+            "code": "unsupported_link_scheme",
+            "message": "Links must start with http:// or https://.",
+        }
+    }
