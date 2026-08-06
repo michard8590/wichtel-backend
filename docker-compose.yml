@@ -1,0 +1,33 @@
+services:
+  wichtel-backend:
+    build: .
+    container_name: wichtel-backend
+    restart: unless-stopped
+
+    read_only: true
+
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+
+    cap_drop:
+      - ALL
+
+    security_opt:
+      - no-new-privileges:true
+
+    pids_limit: 100
+
+    environment:
+      DATABASE_PATH: "${DATABASE_PATH:-/app/data/wichtel.db}"
+      RATE_LIMIT_ENABLED: "${RATE_LIMIT_ENABLED:-true}"
+      TRUSTED_PROXY_NETWORKS: "${TRUSTED_PROXY_NETWORKS:-}"
+
+    volumes:
+      - ./data:/app/data
+
+    networks:
+      - docker_web
+
+networks:
+  docker_web:
+    external: true

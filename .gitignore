@@ -1,0 +1,37 @@
+# Produktionsdaten
+data/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Backups
+*.backup-*
+*.bak
+Dockerfile.broken-*
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Umgebungsdateien
+.env
+.env.*
+!.env.example
+
+# IDE und Betriebssystem
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Logs und temporäre Dateien
+*.log
+*.tmp
+*.swp
