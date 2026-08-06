@@ -214,7 +214,7 @@ def test_user_cannot_edit_another_users_wish(api):
         f"/api/groups/{group['id']}/wishlist",
         headers=auth_headers(owner),
         json={
-            "title": "Mein Wunsch",
+            "title": "My wish",
             "description": None,
             "link": None,
         },
@@ -535,7 +535,7 @@ def test_drawn_group_cannot_be_updated(api):
         f"/api/groups/{group['id']}",
         headers=auth_headers(users[0]),
         json={
-            "name": "Nachträglich geändert",
+            "name": "Changed afterwards",
             "budget_cents": 100,
         },
     )
@@ -570,7 +570,7 @@ def test_drawn_group_wishlist_cannot_be_changed(api):
         f"/api/groups/{group['id']}/wishlist",
         headers=auth_headers(users[0]),
         json={
-            "title": "Zu spät",
+            "title": "Too late",
             "description": None,
             "link": None,
         },
@@ -630,7 +630,7 @@ def test_user_cannot_create_more_than_25_open_groups(api):
             "/api/groups",
             headers=auth_headers(owner),
             json={
-                "name": f"Gruppe {index + 1}",
+                "name": f"Group {index + 1}",
                 "budget_cents": None,
             },
         )
@@ -640,7 +640,7 @@ def test_user_cannot_create_more_than_25_open_groups(api):
         "/api/groups",
         headers=auth_headers(owner),
         json={
-            "name": "Gruppe 26",
+            "name": "Group 26",
             "budget_cents": None,
         },
     )
@@ -693,7 +693,7 @@ def test_user_cannot_create_more_than_30_wishes(api):
             f"/api/groups/{group['id']}/wishlist",
             headers=auth_headers(owner),
             json={
-                "title": f"Wunsch {index + 1}",
+                "title": f"Wish {index + 1}",
                 "description": None,
                 "link": None,
             },
@@ -705,7 +705,7 @@ def test_user_cannot_create_more_than_30_wishes(api):
         f"/api/groups/{group['id']}/wishlist",
         headers=auth_headers(owner),
         json={
-            "title": "Wunsch 31",
+            "title": "Wish 31",
             "description": None,
             "link": None,
         },

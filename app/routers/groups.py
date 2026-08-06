@@ -119,7 +119,7 @@ def create_group(
     if len(group_name) < 2:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Der Gruppenname muss mindestens zwei Zeichen enthalten.",
+            detail='The group name must contain at least two characters.',
         )
 
     group_id = str(uuid.uuid4())
@@ -145,8 +145,7 @@ def create_group(
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=(
-                    "Du hast bereits die maximal erlaubte "
-                    "Anzahl offener Gruppen erstellt."
+                    'You have already created the maximum number of open groups.'
                 ),
             )
         connection.execute("PRAGMA foreign_keys = ON")
@@ -235,8 +234,7 @@ def update_group(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=(
-                "Der Gruppenname muss mindestens "
-                "zwei Zeichen enthalten."
+                'The group name must contain at least two characters.'
             ),
         )
 
@@ -262,7 +260,7 @@ def update_group(
             if group is None:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Die Gruppe wurde nicht gefunden.",
+                    detail='The group was not found.',
                 )
 
             (
@@ -277,8 +275,7 @@ def update_group(
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail=(
-                        "Nur der Ersteller darf "
-                        "diese Gruppe bearbeiten."
+                        'Only the group owner may update this group.'
                     ),
                 )
 
@@ -286,8 +283,7 @@ def update_group(
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail=(
-                        "Nach der Auslosung kann die "
-                        "Gruppe nicht mehr bearbeitet werden."
+                        'The group cannot be updated after the draw.'
                     ),
                 )
 
@@ -329,8 +325,7 @@ def update_group(
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=(
-                    "Die Gruppe konnte nicht "
-                    "aktualisiert werden."
+                    'The group could not be updated.'
                 ),
             ) from exception
 
@@ -375,7 +370,7 @@ def leave_group(
             if group is None:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Die Gruppe wurde nicht gefunden.",
+                    detail='The group was not found.',
                 )
 
             owner_user_id, group_status = group
@@ -384,17 +379,14 @@ def leave_group(
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail=(
-                        "Der Ersteller kann die Gruppe nicht verlassen. "
-                        "Er kann sie nur löschen."
-                    ),
+                        'The group owner cannot leave the group and must delete it instead.'                    ),
                 )
 
             if group_status != "OPEN":
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail=(
-                        "Nach der Auslosung kann die Gruppe "
-                        "nicht mehr verlassen werden."
+                        'The group cannot be left after the draw.'
                     ),
                 )
 
@@ -415,7 +407,7 @@ def leave_group(
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=(
-                        "Du bist kein Mitglied dieser Gruppe."
+                        'You are not a member of this group.'
                     ),
                 )
 
@@ -459,7 +451,7 @@ def leave_group(
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=(
-                    "Die Gruppe konnte nicht verlassen werden."
+                    'The group could not be left.'
                 ),
             ) from exception
 
@@ -494,7 +486,7 @@ def remove_group_member(
             if group is None:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Die Gruppe wurde nicht gefunden.",
+                    detail='The group was not found.',
                 )
 
             owner_user_id, group_status = group
@@ -503,7 +495,7 @@ def remove_group_member(
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail=(
-                        "Nur der Ersteller darf Mitglieder entfernen."
+                        'Only the group owner may remove members.'
                     ),
                 )
 
@@ -511,8 +503,7 @@ def remove_group_member(
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail=(
-                        "Nach der Auslosung können keine Mitglieder "
-                        "mehr entfernt werden."
+                        'Members cannot be removed after the draw.'
                     ),
                 )
 
@@ -520,8 +511,7 @@ def remove_group_member(
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail=(
-                        "Der Ersteller kann nicht aus der eigenen "
-                        "Gruppe entfernt werden."
+                        'The group owner cannot be removed from their own group.'
                     ),
                 )
 
@@ -542,8 +532,7 @@ def remove_group_member(
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=(
-                        "Das Mitglied wurde in dieser Gruppe "
-                        "nicht gefunden."
+                        'The member was not found in this group.'
                     ),
                 )
 
@@ -587,7 +576,7 @@ def remove_group_member(
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=(
-                    "Das Mitglied konnte nicht entfernt werden."
+                    'The member could not be removed.'
                 ),
             ) from exception
 
@@ -636,7 +625,7 @@ def delete_group(
                     status_code=
                         status.HTTP_404_NOT_FOUND,
                     detail=(
-                        "Die Gruppe wurde nicht gefunden."
+                        'The group was not found.'
                     ),
                 )
 
@@ -681,9 +670,7 @@ def delete_group(
                     status_code=
                         status.HTTP_403_FORBIDDEN,
                     detail=(
-                        "Du darfst diese Gruppe "
-                        "nicht löschen."
-                    ),
+                        'You are not allowed to delete this group.'                    ),
                 )
 
             connection.execute(
@@ -707,9 +694,7 @@ def delete_group(
                 status_code=
                     status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=(
-                    "Die Gruppe konnte nicht "
-                    "gelöscht werden."
-                ),
+                    'The group could not be deleted.'                ),
             ) from exception
 
 
@@ -757,8 +742,7 @@ def get_group_detail(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=(
-                    "Gruppe wurde nicht gefunden "
-                    "oder du bist kein Mitglied."
+                    'The group was not found or you are not a member.'
                 ),
             )
 
@@ -904,7 +888,7 @@ def join_group(
         if group is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Es wurde keine Gruppe mit diesem Einladungscode gefunden.",
+                detail='No group was found for this invite code.',
             )
 
         (
@@ -933,8 +917,7 @@ def join_group(
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=(
-                    "Bereits ausgelosten Gruppen kann "
-                    "nicht beigetreten werden."
+                    'You cannot join a group that has already been drawn.'
                 ),
             )
 
@@ -955,8 +938,7 @@ def join_group(
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail=(
-                        "Diese Gruppe hat bereits die maximal "
-                        "erlaubte Anzahl Mitglieder."
+                        'This group has already reached the maximum number of members.'
                     ),
                 )
 

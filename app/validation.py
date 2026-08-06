@@ -23,8 +23,7 @@ def validate_display_name(
             status_code=
                 status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=(
-                "Der Name muss mindestens "
-                "zwei Zeichen enthalten."
+                'The name must contain at least two characters.'
             ),
         )
 
@@ -33,8 +32,7 @@ def validate_display_name(
             status_code=
                 status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=(
-                "Der Name darf höchstens "
-                "50 Zeichen enthalten."
+                'The name must not exceed 50 characters.'
             ),
         )
 
@@ -46,8 +44,7 @@ def validate_display_name(
             status_code=
                 status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=(
-                "Der Name enthält nicht "
-                "erlaubte Steuerzeichen."
+                'The name contains unsupported control characters.'
             ),
         )
 
@@ -59,8 +56,7 @@ def validate_display_name(
             status_code=
                 status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=(
-                "Der Name muss mindestens "
-                "einen Buchstaben oder eine Zahl enthalten."
+                'The name must contain at least one letter or number.'
             ),
         )
 
@@ -84,7 +80,7 @@ def validate_optional_http_url(
         raise HTTPException(
             status_code=
                 status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Der Link ist ungültig.",
+            detail='The link is invalid.'
         ) from exception
 
     if (
@@ -97,8 +93,7 @@ def validate_optional_http_url(
             status_code=
                 status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=(
-                "Links müssen mit http:// oder "
-                "https:// beginnen."
+                'Links must start with http:// or https://.'
             ),
         )
 

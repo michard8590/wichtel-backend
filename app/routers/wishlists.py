@@ -50,7 +50,7 @@ def create_wishlist_item(
     if not title:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Der Wunsch benötigt einen Titel.",
+            detail='The wishlist item requires a title.'
         )
 
     with open_database() as connection:
@@ -75,8 +75,7 @@ def create_wishlist_item(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=(
-                    "Gruppe wurde nicht gefunden "
-                    "oder du bist kein Mitglied."
+                    'The group was not found or you are not a member.'
                 ),
             )
 
@@ -84,9 +83,7 @@ def create_wishlist_item(
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=(
-                    "Nach der Auslosung können Wünsche "
-                    "nicht mehr hinzugefügt werden."
-                ),
+                    'Wishlist items cannot be added after the draw.'                ),
             )
 
         wishlist_item_count = connection.execute(
@@ -109,9 +106,7 @@ def create_wishlist_item(
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=(
-                    "Für diese Gruppe ist die maximal erlaubte "
-                    "Anzahl Wünsche erreicht."
-                ),
+                    'The maximum number of wishlist items has been reached for this group.'                ),
             )
 
         item_id = str(uuid.uuid4())
@@ -178,7 +173,7 @@ def update_wishlist_item(
     if not title:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Der Wunsch benötigt einen Titel.",
+            detail='The wishlist item requires a title.'
         )
 
     with open_database() as connection:
@@ -206,15 +201,14 @@ def update_wishlist_item(
         if item is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Der Wunsch wurde nicht gefunden.",
+                detail='The wishlist item was not found.',
             )
 
         if item[1] != "OPEN":
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=(
-                    "Nach der Auslosung können Wünsche "
-                    "nicht mehr bearbeitet werden."
+                    'Wishlist items cannot be updated after the draw.'
                 ),
             )
 
@@ -285,16 +279,14 @@ def delete_wishlist_item(
         if item is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Der Wunsch wurde nicht gefunden.",
+                detail='The wishlist item was not found.',
             )
 
         if item[1] != "OPEN":
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=(
-                    "Nach der Auslosung können Wünsche "
-                    "nicht mehr gelöscht werden."
-                ),
+                    'Wishlist items cannot be deleted after the draw.'                ),
             )
 
         cursor = connection.execute(
@@ -315,9 +307,7 @@ def delete_wishlist_item(
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=(
-                    "Der Wunsch konnte nicht "
-                    "eindeutig gelöscht werden."
-                ),
+                    'The wishlist item could not be deleted unambiguously.'                ),
             )
 
         connection.commit()
@@ -350,7 +340,7 @@ def get_own_wishlist(
         if membership is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Gruppe wurde nicht gefunden oder du bist kein Mitglied.",
+                detail='The group was not found or you are not a member.',
             )
 
         rows = connection.execute(

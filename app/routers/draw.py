@@ -68,8 +68,7 @@ def get_own_draw_assignment(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=(
-                    "Die Gruppe wurde nicht gefunden "
-                    "oder du bist kein Mitglied."
+                    'The group was not found or you are not a member.'
                 ),
             )
 
@@ -83,13 +82,13 @@ def get_own_draw_assignment(
         if group_status != "DRAWN":
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Die Gruppe wurde noch nicht ausgelost.",
+                detail='The group has not been drawn yet.',
             )
 
         if receiver_user_id is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Für dich wurde keine Zuteilung gefunden.",
+                detail='No assignment was found for you.'
             )
 
         wishlist_rows = connection.execute(
@@ -160,7 +159,7 @@ def draw_group(
             if group is None:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Die Gruppe wurde nicht gefunden.",
+                    detail='The group was not found.',
                 )
 
             owner_user_id, group_status = group
@@ -169,15 +168,14 @@ def draw_group(
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail=(
-                        "Nur der Ersteller der Gruppe "
-                        "darf die Auslosung starten."
+                        'Only the group owner may start the draw.'
                     ),
                 )
 
             if group_status != "OPEN":
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail="Diese Gruppe wurde bereits ausgelost.",
+                    detail='This group has already been drawn.',
                 )
 
             member_rows = connection.execute(
@@ -199,9 +197,7 @@ def draw_group(
                 raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                     detail=(
-                        "Für die Auslosung werden "
-                        "mindestens 3 Mitglieder benötigt."
-                    ),
+                        'At least three members are required for the draw.'                    ),
                 )
 
             receivers = member_ids.copy()
@@ -219,8 +215,7 @@ def draw_group(
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail=(
-                        "Es konnte keine gültige "
-                        "Zuteilung erzeugt werden."
+                        'A valid assignment could not be generated.'
                     ),
                 )
 
@@ -261,7 +256,7 @@ def draw_group(
             if cursor.rowcount != 1:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail="Diese Gruppe wurde bereits ausgelost.",
+                    detail='This group has already been drawn.',
                 )
 
             connection.commit()
@@ -276,8 +271,7 @@ def draw_group(
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=(
-                    "Die Gruppe wurde möglicherweise "
-                    "bereits ausgelost."
+                    'The group may already have been drawn.'
                 ),
             ) from exception
 
@@ -286,7 +280,7 @@ def draw_group(
 
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Die Auslosung konnte nicht gespeichert werden.",
+                detail='The draw could not be saved.',
             ) from exception
 
     return DrawGroupResponse(

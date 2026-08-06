@@ -18,7 +18,7 @@ def get_authenticated_user_id(
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Geräte-Token fehlt.",
+            detail='Device token is missing.'
         )
 
     token = authorization.removeprefix("Bearer ").strip()
@@ -26,7 +26,7 @@ def get_authenticated_user_id(
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Geräte-Token fehlt.",
+            detail='Device token is missing.'
         )
 
     with open_database() as connection:
@@ -43,7 +43,6 @@ def get_authenticated_user_id(
     if device is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Geräte-Token ist ungültig.",
-        )
+            detail='Device token is invalid.'        )
 
     return device[0]

@@ -31,7 +31,7 @@ venv/
 .DS_Store
 Thumbs.db
 
-# Logs und temporäre Dateien
+# Logs and temporary files
 *.log
 *.tmp
 *.swp

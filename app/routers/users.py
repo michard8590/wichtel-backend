@@ -139,15 +139,14 @@ def register_user(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=(
-                "Das Profil konnte wegen eines "
-                "eindeutigen Datenkonflikts nicht erstellt werden."
+                'The profile could not be created because of a unique data conflict.'
             ),
         ) from exception
 
     except sqlite3.Error as exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Das Benutzerkonto konnte nicht erstellt werden.",
+            detail='The user account could not be created.',
         ) from exception
 
     return RegisterResponse(
@@ -220,9 +219,7 @@ def recover_user(
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=(
-                    "Account-Code oder "
-                    "Wiederherstellungsschlüssel ist ungültig."
-                ),
+                    'The account code or recovery key is invalid.'               ),
             )
 
         (
@@ -245,9 +242,7 @@ def recover_user(
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=(
-                    "Account-Code oder "
-                    "Wiederherstellungsschlüssel ist ungültig."
-                ),
+                    'The account code or recovery key is invalid.'               ),
             )
 
         active_device_count = connection.execute(
@@ -267,9 +262,7 @@ def recover_user(
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=(
-                    "Für dieses Profil sind bereits zu viele "
-                    "aktive Geräte registriert."
-                ),
+                    'Too many active devices are already registered for this profile.'                ),
             )
 
         device_id = str(uuid.uuid4())
@@ -303,7 +296,7 @@ def recover_user(
         except sqlite3.Error as exception:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Das Profil konnte nicht wiederhergestellt werden.",
+                detail='The profile could not be recovered.',
             ) from exception
 
     return RecoverResponse(
@@ -356,7 +349,7 @@ def update_own_profile(
                     status_code=
                         status.HTTP_404_NOT_FOUND,
                     detail=(
-                        "Das Profil wurde nicht gefunden."
+                        'The profile was not found.'
                     ),
                 )
 
@@ -369,8 +362,7 @@ def update_own_profile(
                 raise HTTPException(
                     status_code=status.HTTP_410_GONE,
                     detail=(
-                        "Das Profil wurde bereits gelöscht."
-                    ),
+                        'The profile has already been deleted.'                    ),
                 )
 
             connection.execute(
@@ -398,8 +390,7 @@ def update_own_profile(
                 status_code=
                     status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=(
-                    "Das Profil konnte nicht "
-                    "aktualisiert werden."
+                    'The profile could not be updated.'
                 ),
             ) from exception
 
@@ -424,12 +415,11 @@ def delete_own_account(
     deleted_at = utc_now()
 
     anonymous_name = (
-        "Gelöschter Benutzer "
-        + secrets.token_hex(2).upper()
+        'Deleted user '        + secrets.token_hex(2).upper()
     )
 
     # Technisch eindeutiger interner Wert.
-    # Dieser wird nicht mehr an die App ausgeliefert.
+    # This value is no longer returned to the app.
     anonymous_account_code = (
         "DEL-"
         + secrets.token_hex(8).upper()
@@ -464,7 +454,7 @@ def delete_own_account(
                     status_code=
                         status.HTTP_404_NOT_FOUND,
                     detail=(
-                        "Das Konto wurde nicht gefunden."
+                        'The account was not found.'
                     ),
                 )
 
@@ -472,12 +462,11 @@ def delete_own_account(
                 raise HTTPException(
                     status_code=status.HTTP_410_GONE,
                     detail=(
-                        "Das Konto wurde bereits gelöscht."
-                    ),
+                        'The account has already been deleted.'                    ),
                 )
 
-            # Offene Gruppen des Benutzers löschen.
-            # Zugehörige Mitglieder, Wünsche und Zuteilungen
+            # Delete the user's open groups.
+            # Related memberships, wishlist items, and assignments
             # werden durch ON DELETE CASCADE entfernt.
             connection.execute(
                 """
@@ -488,7 +477,7 @@ def delete_own_account(
                 (user_id,),
             )
 
-            # Eigene Wünsche in anderen offenen Gruppen löschen.
+            # Delete the user's wishlist items in other open groups.
             connection.execute(
                 """
                 DELETE FROM wishlist_items
@@ -502,7 +491,7 @@ def delete_own_account(
                 (user_id,),
             )
 
-            # Aus anderen offenen Gruppen austreten.
+            # Leave other open groups.
             connection.execute(
                 """
                 DELETE FROM group_members
@@ -516,7 +505,7 @@ def delete_own_account(
                 (user_id,),
             )
 
-            # Alle Geräte und damit alle Sitzungen ungültig machen.
+            # Revoke all devices and therefore all sessions.
             connection.execute(
                 """
                 DELETE FROM devices
@@ -525,7 +514,7 @@ def delete_own_account(
                 (user_id,),
             )
 
-            # In ausgelosten Gruppen bleibt der Benutzer als
+            # In drawn groups, the user remains as
             # anonymisierter Platzhalter bestehen.
             connection.execute(
                 """
@@ -564,9 +553,7 @@ def delete_own_account(
                 status_code=
                     status.HTTP_409_CONFLICT,
                 detail=(
-                    "Das Konto konnte wegen bestehender "
-                    "Datenbeziehungen nicht gelöscht werden."
-                ),
+                    'The account could not be deleted because related data still exists.'                ),
             ) from exception
 
         except sqlite3.Error as exception:
@@ -576,6 +563,5 @@ def delete_own_account(
                 status_code=
                     status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=(
-                    "Das Konto konnte nicht gelöscht werden."
-                ),
+                    'The account could not be deleted.'                ),
             ) from exception

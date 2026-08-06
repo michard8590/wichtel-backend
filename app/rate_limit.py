@@ -65,7 +65,7 @@ def get_client_ip(
             )
 
             if forwarded_for:
-                # Beim einzelnen vertrauenswürdigen NPM-Proxy
+                # For a single trusted NPM proxy
                 # ist der ganz rechte Eintrag die direkte
                 # Gegenstelle des Proxys.
                 forwarded_ip = (
@@ -135,9 +135,7 @@ def check_rate_limit(
                 status_code=
                     status.HTTP_429_TOO_MANY_REQUESTS,
                 detail=(
-                    "Zu viele Anfragen. "
-                    "Bitte versuche es später erneut."
-                ),
+                    'Too many requests. Please try again later.'                ),
                 headers={
                     "Retry-After":
                         str(retry_after),
@@ -146,8 +144,8 @@ def check_rate_limit(
 
         bucket.append(now)
 
-        # Gelegentliche Bereinigung vollständig
-        # abgelaufener Schlüssel.
+        # Periodically clean up fully
+        # expired keys.
         if len(_rate_limit_buckets) > 10_000:
             empty_keys = []
 
