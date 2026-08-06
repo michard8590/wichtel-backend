@@ -21,6 +21,7 @@ def api(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
     for module_name in [
         "app.main",
+        "app.auth",
         "app.rate_limit",
         "app.database",
         "app.config",
