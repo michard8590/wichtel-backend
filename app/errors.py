@@ -67,6 +67,14 @@ class ErrorCode(StrEnum):
     WISHLIST_DELETE_AFTER_DRAW_FORBIDDEN = "wishlist_delete_after_draw_forbidden"
     WISHLIST_DELETE_AMBIGUOUS = "wishlist_delete_ambiguous"
 
+    DRAW_NOT_COMPLETED = "draw_not_completed"
+    DRAW_ASSIGNMENT_NOT_FOUND = "draw_assignment_not_found"
+    DRAW_FORBIDDEN = "draw_forbidden"
+    DRAW_REQUIRES_THREE_MEMBERS = "draw_requires_three_members"
+    DRAW_ASSIGNMENT_GENERATION_FAILED = "draw_assignment_generation_failed"
+    DRAW_CONFLICT = "draw_conflict"
+    DRAW_SAVE_FAILED = "draw_save_failed"
+
 
 def api_error(
     *,

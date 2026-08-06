@@ -1025,3 +1025,43 @@ def test_unknown_wishlist_item_returns_error_code(api):
             "message": "The wishlist item was not found.",
         }
     }
+
+
+def test_assignment_before_draw_returns_error_code(api):
+    client, _ = api
+
+    owner = register(client, "Assignment Owner")
+    group = create_group(client, owner)
+
+    response = client.get(
+        f"/api/groups/{group['id']}/assignment",
+        headers=auth_headers(owner),
+    )
+
+    assert response.status_code == 409
+    assert response.json() == {
+        "detail": {
+            "code": "draw_not_completed",
+            "message": "The group has not been drawn yet.",
+        }
+    }
+
+
+def test_draw_with_too_few_members_returns_error_code(api):
+    client, _ = api
+
+    owner = register(client, "Small Draw Owner")
+    group = create_group(client, owner)
+
+    response = client.post(
+        f"/api/groups/{group['id']}/draw",
+        headers=auth_headers(owner),
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": {
+            "code": "draw_requires_three_members",
+            "message": ("At least three members are required for the draw."),
+        }
+    }

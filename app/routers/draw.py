@@ -12,6 +12,7 @@ from fastapi import (
 )
 
 from app.auth import get_authenticated_user_id
+from app.errors import ErrorCode, api_error
 from app.database import open_database
 from app.schemas import (
     DrawAssignmentResponse,
@@ -64,9 +65,10 @@ def get_own_draw_assignment(
         ).fetchone()
 
         if assignment is None:
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=("The group was not found or you are not a member."),
+                code=ErrorCode.GROUP_NOT_FOUND_OR_NOT_MEMBER,
+                message="The group was not found or you are not a member.",
             )
 
         (
@@ -77,15 +79,17 @@ def get_own_draw_assignment(
         ) = assignment
 
         if group_status != "DRAWN":
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="The group has not been drawn yet.",
+                code=ErrorCode.DRAW_NOT_COMPLETED,
+                message="The group has not been drawn yet.",
             )
 
         if receiver_user_id is None:
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="No assignment was found for you.",
+                code=ErrorCode.DRAW_ASSIGNMENT_NOT_FOUND,
+                message="No assignment was found for you.",
             )
 
         wishlist_rows = connection.execute(
@@ -153,23 +157,26 @@ def draw_group(
             ).fetchone()
 
             if group is None:
-                raise HTTPException(
+                raise api_error(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="The group was not found.",
+                    code=ErrorCode.GROUP_NOT_FOUND,
+                    message="The group was not found.",
                 )
 
             owner_user_id, group_status = group
 
             if owner_user_id != user_id:
-                raise HTTPException(
+                raise api_error(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail=("Only the group owner may start the draw."),
+                    code=ErrorCode.DRAW_FORBIDDEN,
+                    message="Only the group owner may start the draw.",
                 )
 
             if group_status != "OPEN":
-                raise HTTPException(
+                raise api_error(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail="This group has already been drawn.",
+                    code=ErrorCode.GROUP_ALREADY_DRAWN,
+                    message="This group has already been drawn.",
                 )
 
             member_rows = connection.execute(
@@ -185,9 +192,10 @@ def draw_group(
             member_ids = [row[0] for row in member_rows]
 
             if len(member_ids) < 3:
-                raise HTTPException(
+                raise api_error(
                     status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                    detail=("At least three members are required for the draw."),
+                    code=ErrorCode.DRAW_REQUIRES_THREE_MEMBERS,
+                    message="At least three members are required for the draw.",
                 )
 
             receivers = member_ids.copy()
@@ -201,9 +209,10 @@ def draw_group(
                 ):
                     break
             else:
-                raise HTTPException(
+                raise api_error(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=("A valid assignment could not be generated."),
+                    code=ErrorCode.DRAW_ASSIGNMENT_GENERATION_FAILED,
+                    message="A valid assignment could not be generated.",
                 )
 
             created_at = utc_now()
@@ -240,9 +249,10 @@ def draw_group(
             )
 
             if cursor.rowcount != 1:
-                raise HTTPException(
+                raise api_error(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail="This group has already been drawn.",
+                    code=ErrorCode.GROUP_ALREADY_DRAWN,
+                    message="This group has already been drawn.",
                 )
 
             connection.commit()
@@ -254,17 +264,19 @@ def draw_group(
         except sqlite3.IntegrityError as exception:
             connection.rollback()
 
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=("The group may already have been drawn."),
+                code=ErrorCode.DRAW_CONFLICT,
+                message="The group may already have been drawn.",
             ) from exception
 
         except sqlite3.Error as exception:
             connection.rollback()
 
-            raise HTTPException(
+            raise api_error(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="The draw could not be saved.",
+                code=ErrorCode.DRAW_SAVE_FAILED,
+                message="The draw could not be saved.",
             ) from exception
 
     return DrawGroupResponse(
