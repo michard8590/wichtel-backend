@@ -541,7 +541,7 @@ def test_drawn_group_cannot_be_updated(api):
     assert response.status_code == 409
 
 
-def test_drawn_group_wishlist_cannot_be_changed(api):
+def test_drawn_group_wishlist_allows_create_but_blocks_update_and_delete(api):
     client, _ = api
 
     users = [
@@ -570,17 +570,46 @@ def test_drawn_group_wishlist_cannot_be_changed(api):
         == 200
     )
 
-    response = client.post(
+    create_response = client.post(
         f"/api/groups/{group['id']}/wishlist",
         headers=auth_headers(users[0]),
         json={
-            "title": "Too late",
+            "title": "Added after draw",
+            "description": "This is allowed.",
+            "link": None,
+        },
+    )
+
+    assert create_response.status_code == 201
+
+    item_id = create_response.json()["id"]
+
+    update_response = client.put(
+        f"/api/groups/{group['id']}/wishlist/{item_id}",
+        headers=auth_headers(users[0]),
+        json={
+            "title": "Changed after draw",
             "description": None,
             "link": None,
         },
     )
 
-    assert response.status_code == 409
+    assert update_response.status_code == 409
+    assert (
+        update_response.json()["detail"]["code"]
+        == "wishlist_update_after_draw_forbidden"
+    )
+
+    delete_response = client.delete(
+        f"/api/groups/{group['id']}/wishlist/{item_id}",
+        headers=auth_headers(users[0]),
+    )
+
+    assert delete_response.status_code == 409
+    assert (
+        delete_response.json()["detail"]["code"]
+        == "wishlist_delete_after_draw_forbidden"
+    )
 
 
 def test_recovery_limits_active_devices(api):

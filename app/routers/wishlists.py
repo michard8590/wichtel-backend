@@ -76,13 +76,6 @@ def create_wishlist_item(
                 message="The group was not found or you are not a member.",
             )
 
-        if membership[0] != "OPEN":
-            raise api_error(
-                status_code=status.HTTP_409_CONFLICT,
-                code=ErrorCode.WISHLIST_CREATE_AFTER_DRAW_FORBIDDEN,
-                message="Wishlist items cannot be added after the draw.",
-            )
-
         wishlist_item_count = connection.execute(
             """
             SELECT COUNT(*)
